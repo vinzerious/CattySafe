@@ -109,6 +109,7 @@ export const DOG_VEHICLE_ZONES = {
 const STORAGE_KEY_CLEARED = 'cattysafe_cleared_zones_v1';
 const STORAGE_KEY_THEME = 'cattysafe_theme_v1';
 const STORAGE_KEY_SPECIES = 'cattysafe_species_v1';
+const STORAGE_KEY_TORCH_DEVICE = 'cattysafe_torch_device_id_v1';
 
 class CattySafeApp {
   constructor() {
@@ -129,6 +130,19 @@ class CattySafeApp {
     this.micAudioCtx = null;
     this.micSource = null;
     this.micAnalyser = null;
+
+    // Hardware LED Torch & Under-Car Camera Inspection state
+    this.torchStream = null;
+    this.torchTrack = null;
+    this.torchImageCapture = null;
+    this.isHardwareTorchOn = false;
+    this.isTorchScanning = false;
+    this.isTorchStrobe = false;
+    this.torchStrobeTimer = null;
+    this.torchRearDevices = [];
+    this.activeTorchDeviceId = null;
+    this.torchNightBoost = true;
+    this.torchZoomLevel = 1;
 
     this.init();
   }
@@ -954,7 +968,7 @@ class CattySafeApp {
   }
 
   // =========================================================================
-  // SCREEN INSPECTION TORCH OVERLAY
+  // HARDWARE LED TORCH & UNDER-CAR INSPECTION OVERLAY
   // =========================================================================
 
   bindTorchDialog() {
@@ -964,19 +978,28 @@ class CattySafeApp {
     const strobeBtn = document.getElementById('btn-toggle-torch-strobe');
     const soundBtn = document.getElementById('btn-torch-trigger-sound');
     const lampBox = document.getElementById('torch-lamp-surface');
+    const hwTorchBtn = document.getElementById('btn-toggle-hardware-torch');
+    const cycleLensBtn = document.getElementById('btn-cycle-torch-lens');
+    const rescanBtn = document.getElementById('btn-rescan-torch');
+    const cameraSelect = document.getElementById('torch-camera-select');
+    const nightBoostBtn = document.getElementById('btn-toggle-night-boost');
+    const zoomBtn = document.getElementById('btn-toggle-camera-zoom');
 
     if (openBtn && dialog) {
-      openBtn.addEventListener('click', () => {
+      openBtn.addEventListener('click', async () => {
         if (typeof dialog.showModal === 'function') {
           dialog.showModal();
         } else {
           dialog.setAttribute('open', '');
         }
+        // Automatically scan & activate the mobile rear camera LED flash on open
+        await this.scanAndActivateHardwareTorch(false);
       });
     }
 
     if (closeBtn && dialog) {
       closeBtn.addEventListener('click', () => {
+        this.stopTorchCamera();
         if (typeof dialog.close === 'function') {
           dialog.close();
         } else {
@@ -985,11 +1008,132 @@ class CattySafeApp {
       });
     }
 
+    if (dialog) {
+      // Ensure hardware camera & LED flash always turn off when closed via Esc, mobile back, or backdrop
+      dialog.addEventListener('close', () => {
+        this.stopTorchCamera();
+      });
+      dialog.addEventListener('cancel', () => {
+        this.stopTorchCamera();
+      });
+
+      // Fallback for browsers without native <dialog closedby="any"> support
+      if (typeof HTMLDialogElement !== 'undefined' && !('closedBy' in HTMLDialogElement.prototype)) {
+        dialog.addEventListener('click', (event) => {
+          if (event.target !== dialog) return;
+          const rect = dialog.getBoundingClientRect();
+          const isDialogContent = (
+            rect.top <= event.clientY &&
+            event.clientY <= rect.top + rect.height &&
+            rect.left <= event.clientX &&
+            event.clientX <= rect.left + rect.width
+          );
+          if (isDialogContent) return;
+          dialog.close();
+        });
+      }
+    }
+
+    // Release camera/torch if page is backgrounded
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && this.torchStream) {
+        this.stopTorchCamera();
+      }
+    });
+
+    if (hwTorchBtn) {
+      hwTorchBtn.addEventListener('click', async () => {
+        if (this.isTorchScanning) return;
+        if (!this.torchTrack || this.torchTrack.readyState === 'ended') {
+          await this.scanAndActivateHardwareTorch(false);
+          return;
+        }
+        const nextState = !this.isHardwareTorchOn;
+        const res = await this.trySetTrackTorch(this.torchTrack, nextState);
+        this.isHardwareTorchOn = nextState && res.applied;
+        this.updateTorchStatusUI(
+          this.isHardwareTorchOn ? 'active' : 'partial',
+          this.isHardwareTorchOn
+            ? `ไฟแฟลช LED กล้องหลัง: เปิดทำงานอยู่ (${this.getActiveLensDisplayName()})`
+            : `ปิดไฟแฟลช LED ชั่วคราว (${this.getActiveLensDisplayName()})`
+        );
+      });
+    }
+
+    if (rescanBtn) {
+      rescanBtn.addEventListener('click', async () => {
+        if (this.isTorchScanning) return;
+        // Clear cached device so full multi-lens scan runs fresh
+        try {
+          localStorage.removeItem(STORAGE_KEY_TORCH_DEVICE);
+        } catch (_) {}
+        await this.scanAndActivateHardwareTorch(true);
+      });
+    }
+
+    if (cycleLensBtn) {
+      cycleLensBtn.addEventListener('click', async () => {
+        if (this.isTorchScanning || this.torchRearDevices.length < 2) return;
+        const currentIdx = this.torchRearDevices.findIndex((d) => d.deviceId === this.activeTorchDeviceId);
+        const nextIdx = (currentIdx + 1) % this.torchRearDevices.length;
+        const nextDevice = this.torchRearDevices[nextIdx];
+        if (nextDevice) {
+          await this.switchToTorchCameraDevice(nextDevice.deviceId, true);
+        }
+      });
+    }
+
+    if (cameraSelect) {
+      cameraSelect.addEventListener('change', async () => {
+        const chosenId = cameraSelect.value;
+        if (chosenId && !this.isTorchScanning) {
+          await this.switchToTorchCameraDevice(chosenId, true);
+        }
+      });
+    }
+
+    if (nightBoostBtn) {
+      nightBoostBtn.addEventListener('click', () => {
+        this.torchNightBoost = !this.torchNightBoost;
+        const videoEl = document.getElementById('torch-camera-video');
+        if (videoEl) {
+          videoEl.setAttribute('data-night-boost', this.torchNightBoost ? 'true' : 'false');
+        }
+        nightBoostBtn.setAttribute('data-active', this.torchNightBoost ? 'true' : 'false');
+        nightBoostBtn.textContent = this.torchNightBoost ? 'เร่งแสงที่มืด: เปิด' : 'เร่งแสงที่มืด: ปิด';
+      });
+    }
+
+    if (zoomBtn) {
+      zoomBtn.addEventListener('click', async () => {
+        this.torchZoomLevel = this.torchZoomLevel === 1 ? 2 : 1;
+        const videoEl = document.getElementById('torch-camera-video');
+        if (videoEl) {
+          videoEl.setAttribute('data-zoom', String(this.torchZoomLevel));
+        }
+        zoomBtn.setAttribute('data-active', this.torchZoomLevel === 2 ? 'true' : 'false');
+        zoomBtn.textContent = `ซูม ${this.torchZoomLevel}x`;
+        // Also apply hardware camera zoom if supported by track capabilities
+        if (this.torchTrack && typeof this.torchTrack.getCapabilities === 'function') {
+          try {
+            const caps = this.torchTrack.getCapabilities();
+            if (caps && caps.zoom) {
+              const targetZoom = this.torchZoomLevel === 2
+                ? Math.min(caps.zoom.max || 2, Math.max(caps.zoom.min || 1, 2))
+                : (caps.zoom.min || 1);
+              await this.torchTrack.applyConstraints({ advanced: [{ zoom: targetZoom }] });
+            }
+          } catch (_) {}
+        }
+      });
+    }
+
     if (strobeBtn && lampBox) {
       strobeBtn.addEventListener('click', () => {
-        const current = lampBox.getAttribute('data-strobe') === 'true';
-        lampBox.setAttribute('data-strobe', current ? 'false' : 'true');
-        strobeBtn.textContent = current ? 'เปิดไฟกะพริบเตือน (Strobe)' : 'ใช้ไฟส่องสว่างคงที่';
+        this.isTorchStrobe = !this.isTorchStrobe;
+        lampBox.setAttribute('data-strobe', this.isTorchStrobe ? 'true' : 'false');
+        strobeBtn.textContent = this.isTorchStrobe ? 'ใช้ไฟส่องสว่างคงที่' : 'เปิดไฟกะพริบเตือน (Strobe)';
+        this.syncTorchStrobeLoop();
       });
     }
 
@@ -1001,6 +1145,681 @@ class CattySafeApp {
           this.engine.playProfile(this.species === 'dog' ? 'dog-whistle-sweep' : 'ultrasonic-sweep');
         }
       });
+    }
+  }
+
+  /**
+   * Synchronizes hardware LED strobe alongside the screen strobe
+   */
+  syncTorchStrobeLoop() {
+    if (this.torchStrobeTimer) {
+      clearInterval(this.torchStrobeTimer);
+      this.torchStrobeTimer = null;
+    }
+
+    if (!this.isTorchStrobe) {
+      // Restore steady hardware torch if it was on
+      if (this.torchTrack && this.isHardwareTorchOn) {
+        this.trySetTrackTorch(this.torchTrack, true).catch(() => {});
+      }
+      return;
+    }
+
+    let phase = false;
+    this.torchStrobeTimer = setInterval(() => {
+      phase = !phase;
+      if (this.torchTrack && this.torchTrack.readyState === 'live' && this.isHardwareTorchOn) {
+        this.torchTrack.applyConstraints({ advanced: [{ torch: phase }] }).catch(() => {
+          this.torchTrack.applyConstraints({ torch: phase }).catch(() => {});
+        });
+      }
+    }, 420);
+  }
+
+  /**
+   * Formats a readable Thai/English name for the currently active camera lens
+   */
+  getActiveLensDisplayName() {
+    const found = this.torchRearDevices.find((d) => d.deviceId === this.activeTorchDeviceId);
+    if (found && found.cleanLabel) return found.cleanLabel;
+    if (this.torchTrack && this.torchTrack.label) return this.torchTrack.label;
+    return 'เลนส์กล้องหลังหลัก';
+  }
+
+  /**
+   * Updates the Torch Dialog status badge, buttons, and lens selector UI
+   */
+  updateTorchStatusUI(statusMode, statusText, diagnosticHint = null) {
+    const badge = document.getElementById('torch-hardware-badge');
+    const badgeText = document.getElementById('torch-hardware-status-text');
+    const hwTorchBtn = document.getElementById('btn-toggle-hardware-torch');
+    const hwTorchLabel = document.getElementById('btn-hardware-torch-label');
+    const cycleLensBtn = document.getElementById('btn-cycle-torch-lens');
+    const cycleLensLabel = document.getElementById('btn-cycle-lens-label');
+    const pickerRow = document.getElementById('torch-lens-picker-row');
+    const cameraSelect = document.getElementById('torch-camera-select');
+    const activeLensPill = document.getElementById('torch-active-lens-label');
+    const hintEl = document.getElementById('torch-diagnostic-hint');
+
+    if (badge) badge.setAttribute('data-status', statusMode);
+    if (badgeText) badgeText.textContent = statusText;
+
+    if (hwTorchBtn && hwTorchLabel) {
+      hwTorchBtn.setAttribute('data-torch-on', this.isHardwareTorchOn ? 'true' : 'false');
+      if (this.isTorchScanning) {
+        hwTorchLabel.textContent = 'กำลังค้นหาแฟลชกล้องหลัง...';
+      } else if (this.isHardwareTorchOn) {
+        hwTorchLabel.textContent = 'ไฟแฟลช LED กล้องหลัง: เปิดอยู่ (แตะเพื่อปิด)';
+      } else {
+        hwTorchLabel.textContent = 'แตะเพื่อเปิดไฟแฟลช LED กล้องหลัง';
+      }
+    }
+
+    if (activeLensPill) {
+      activeLensPill.textContent = `${this.getActiveLensDisplayName()}${this.isHardwareTorchOn ? ' · แฟลช ON' : ''}`;
+    }
+
+    if (diagnosticHint && hintEl) {
+      hintEl.textContent = diagnosticHint;
+    }
+
+    // Show lens switcher & dropdown if device has multiple cameras
+    const totalLenses = this.torchRearDevices.length;
+    if (cycleLensBtn && cycleLensLabel) {
+      if (totalLenses > 1) {
+        cycleLensBtn.removeAttribute('hidden');
+        const idx = Math.max(0, this.torchRearDevices.findIndex((d) => d.deviceId === this.activeTorchDeviceId));
+        cycleLensLabel.textContent = `สลับเลนส์กล้อง (${idx + 1}/${totalLenses})`;
+      } else {
+        cycleLensBtn.setAttribute('hidden', '');
+      }
+    }
+
+    if (pickerRow && cameraSelect) {
+      if (totalLenses > 1) {
+        pickerRow.removeAttribute('hidden');
+        cameraSelect.innerHTML = '';
+        this.torchRearDevices.forEach((dev, i) => {
+          const opt = document.createElement('option');
+          opt.value = dev.deviceId;
+          opt.textContent = `${dev.cleanLabel}${dev.hasConfirmedTorch ? ' (มีไฟแฟลช LED)' : ''}`;
+          if (dev.deviceId === this.activeTorchDeviceId || (i === 0 && !this.activeTorchDeviceId)) {
+            opt.selected = true;
+          }
+          cameraSelect.appendChild(opt);
+        });
+      } else {
+        pickerRow.setAttribute('hidden', '');
+      }
+    }
+  }
+
+  /**
+   * Attaches a MediaStream to the live <video> viewfinder and waits for frames to flow.
+   * Crucial fix: iOS Safari and Android Chrome Camera2 HAL require the stream to be bound
+   * to a playing <video playsinline muted> element before getCapabilities().torch or
+   * applyConstraints({ advanced: [{ torch: true }] }) responds!
+   */
+  async attachStreamToTorchVideo(stream) {
+    const videoEl = document.getElementById('torch-camera-video');
+    const stageEl = document.getElementById('torch-camera-stage');
+    const lampBox = document.getElementById('torch-lamp-surface');
+
+    if (!videoEl) return;
+    if (stageEl) stageEl.removeAttribute('hidden');
+    if (lampBox) lampBox.setAttribute('data-camera-active', 'true');
+
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.srcObject = stream;
+
+    await new Promise((resolve) => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      const timer = setTimeout(done, 450);
+      videoEl.onloadedmetadata = () => {
+        videoEl.play().then(done).catch(done);
+      };
+      videoEl.play().then(() => {
+        clearTimeout(timer);
+        done();
+      }).catch(() => {});
+    });
+
+    // Allow 180ms for mobile camera HAL sensor & flash driver initialization
+    await new Promise((r) => setTimeout(r, 180));
+  }
+
+  /**
+   * Wakes up the Blink/WebKit ImageCapture pipeline and inspects torch capability.
+   * On many Android Chrome devices, calling new ImageCapture(track).getPhotoCapabilities()
+   * initializes the Android Camera2 photo/flash pipeline so track.getCapabilities().torch unlocks.
+   */
+  async probeTrackTorchSupport(track) {
+    let photoFillLightTorch = false;
+    if (typeof window !== 'undefined' && typeof window.ImageCapture === 'function') {
+      try {
+        this.torchImageCapture = new window.ImageCapture(track);
+        const photoCaps = await this.torchImageCapture.getPhotoCapabilities();
+        if (photoCaps && Array.isArray(photoCaps.fillLightMode)) {
+          photoFillLightTorch =
+            photoCaps.fillLightMode.includes('torch') ||
+            photoCaps.fillLightMode.includes('flash');
+        }
+      } catch (_) {}
+    }
+
+    let caps = {};
+    if (typeof track.getCapabilities === 'function') {
+      try {
+        caps = track.getCapabilities() || {};
+      } catch (_) {}
+    }
+
+    return {
+      capsTorch: caps.torch, // true | false | undefined
+      photoFillLightTorch,
+      confirmedCapable: caps.torch === true || photoFillLightTorch
+    };
+  }
+
+  /**
+   * Multi-strategy torch activation on a video MediaStreamTrack.
+   * Even if track.getCapabilities().torch is undefined (common on Xiaomi/Vivo/Samsung browsers),
+   * we still attempt applyConstraints in multiple standard & vendor formats.
+   */
+  async trySetTrackTorch(track, enable = true) {
+    if (!track || track.readyState === 'ended') {
+      return { applied: false, confirmedByCaps: false };
+    }
+
+    const probe = await this.probeTrackTorchSupport(track);
+    const targetBool = Boolean(enable);
+    let applied = false;
+
+    // Strategy 1: Standard W3C MediaStream ImageCapture advanced constraint
+    try {
+      await track.applyConstraints({ advanced: [{ torch: targetBool }] });
+      applied = true;
+    } catch (_) {
+      // Strategy 2: Direct top-level torch constraint
+      try {
+        await track.applyConstraints({ torch: targetBool });
+        applied = true;
+      } catch (__) {
+        // Strategy 3: Wait 240ms for slow mobile camera HAL warm-up, then retry
+        await new Promise((r) => setTimeout(r, 240));
+        try {
+          await track.applyConstraints({ advanced: [{ torch: targetBool }] });
+          applied = true;
+        } catch (___) {
+          applied = false;
+        }
+      }
+    }
+
+    let settingsTorch = false;
+    if (typeof track.getSettings === 'function') {
+      try {
+        const s = track.getSettings();
+        if (s && s.torch === targetBool) settingsTorch = true;
+      } catch (_) {}
+    }
+
+    // Re-check capabilities after applying constraint
+    let postCapsTorch = probe.capsTorch;
+    if (typeof track.getCapabilities === 'function') {
+      try {
+        const c = track.getCapabilities();
+        if (c && typeof c.torch === 'boolean') postCapsTorch = c.torch;
+      } catch (_) {}
+    }
+
+    const confirmedByCaps = Boolean(
+      postCapsTorch === true ||
+      probe.photoFillLightTorch ||
+      settingsTorch
+    );
+
+    // If caps.torch is explicitly false (e.g., an Ultra-Wide lens with no physical flash LED),
+    // treat it as not having a hardware flash even if applyConstraints didn't throw.
+    const explicitlyNoFlash = postCapsTorch === false && !probe.photoFillLightTorch && !settingsTorch;
+
+    return {
+      applied: applied && !explicitlyNoFlash,
+      confirmedByCaps,
+      explicitlyNoFlash
+    };
+  }
+
+  /**
+   * Enumerates and ranks videoinput devices so the Main 1x Rear Camera (which houses the LED flash)
+   * is prioritized ahead of Ultra-Wide (0.5x), Telephoto, Macro, or Front cameras.
+   */
+  async enumerateAndRankRearCameras() {
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== 'function') {
+      return [];
+    }
+    const allDevices = await navigator.mediaDevices.enumerateDevices();
+    const videoInputs = allDevices.filter((d) => d.kind === 'videoinput');
+
+    const scored = videoInputs.map((dev, index) => {
+      const rawLabel = (dev.label || '').trim();
+      const lower = rawLabel.toLowerCase();
+      let score = 0;
+
+      const isFront = /front|user|selfie|facetime|หน้า/.test(lower);
+      const isBack = /back|rear|environment|world|หลัง/.test(lower);
+      const isAuxiliary = /ultra|0\.5|wide-angle|tele|zoom|macro|depth|bokeh|mono|virtual|dual|triple/.test(lower);
+      const isMainZero = /camera2?\s*0\b|\bmain\b|\bprimary\b|\bstandard\b|เลนส์หลัก/.test(lower);
+
+      if (isFront) {
+        score -= 120;
+      } else {
+        if (isBack) score += 50;
+        if (isMainZero) score += 45;
+        if (isAuxiliary) score -= 30;
+        // On Android Camera2, index 0 is almost always the primary rear camera with flash
+        if (index === 0) score += 25;
+      }
+
+      const cleanLabel = rawLabel
+        ? rawLabel.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*/gi, '')
+        : `เลนส์กล้อง #${index + 1}`;
+
+      return {
+        deviceId: dev.deviceId,
+        rawLabel,
+        cleanLabel,
+        isFront,
+        score,
+        hasConfirmedTorch: false
+      };
+    });
+
+    // Filter out obvious front cameras if we have at least one non-front camera
+    const nonFront = scored.filter((d) => !d.isFront);
+    const pool = nonFront.length > 0 ? nonFront : scored;
+    pool.sort((a, b) => b.score - a.score);
+    return pool;
+  }
+
+  /**
+   * Releases only the active MediaStream tracks (used when switching between rear lenses)
+   */
+  async releaseCurrentTorchStream() {
+    if (this.torchTrack) {
+      try {
+        await this.torchTrack.applyConstraints({ advanced: [{ torch: false }] });
+      } catch (_) {}
+      try {
+        this.torchTrack.stop();
+      } catch (_) {}
+      this.torchTrack = null;
+    }
+    if (this.torchStream) {
+      this.torchStream.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch (_) {}
+      });
+      this.torchStream = null;
+    }
+    this.torchImageCapture = null;
+    // Wait briefly so mobile OS CameraService releases the hardware lock before opening the next lens
+    await new Promise((r) => setTimeout(r, 95));
+  }
+
+  /**
+   * Opens a specific camera deviceId, attaches to <video>, and attempts to turn on the LED flash
+   */
+  async switchToTorchCameraDevice(deviceId, enableTorch = true) {
+    this.isTorchScanning = true;
+    this.updateTorchStatusUI('scanning', 'กำลังสลับเลนส์และเชื่อมต่อไปยังไฟแฟลช LED กล้องหลัง...');
+
+    try {
+      await this.releaseCurrentTorchStream();
+
+      const constraints = deviceId
+        ? {
+            video: {
+              deviceId: { exact: deviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          }
+        : {
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const track = stream.getVideoTracks()[0];
+      if (!track) throw new Error('No video track');
+
+      this.torchStream = stream;
+      this.torchTrack = track;
+      const settings = typeof track.getSettings === 'function' ? track.getSettings() : {};
+      this.activeTorchDeviceId = (settings && settings.deviceId) || deviceId || null;
+
+      await this.attachStreamToTorchVideo(stream);
+
+      const res = await this.trySetTrackTorch(track, enableTorch);
+      this.isHardwareTorchOn = Boolean(enableTorch && res.applied);
+
+      const devEntry = this.torchRearDevices.find((d) => d.deviceId === this.activeTorchDeviceId);
+      if (devEntry && res.confirmedByCaps) {
+        devEntry.hasConfirmedTorch = true;
+      }
+
+      if (res.confirmedByCaps && res.applied && this.activeTorchDeviceId) {
+        try {
+          localStorage.setItem(STORAGE_KEY_TORCH_DEVICE, this.activeTorchDeviceId);
+        } catch (_) {}
+      }
+
+      this.isTorchScanning = false;
+      if (res.confirmedByCaps && res.applied) {
+        this.updateTorchStatusUI(
+          'active',
+          `เปิดไฟแฟลช LED กล้องหลังสำเร็จ (${this.getActiveLensDisplayName()})`,
+          'ไฟแฟลช LED กล้องหลังและกล้องส่องใต้รถทำงานอยู่ — ส่องเข้าไปในซุ้มล้อหรือใต้ท้องรถได้ทันที'
+        );
+      } else if (res.applied) {
+        this.updateTorchStatusUI(
+          'partial',
+          `ส่งคำสั่งเปิดแฟลชที่ ${this.getActiveLensDisplayName()} แล้ว`,
+          'หากไฟแฟลชหลังเครื่องยังไม่ติด (เนื่องจากมือถือมีหลายเลนส์) ให้กดปุ่ม "สลับเลนส์กล้อง" ด้านบนเพื่อเปลี่ยนไปยังเลนส์หลักที่มีแฟลช'
+        );
+      } else {
+        this.updateTorchStatusUI(
+          'partial',
+          `เลนส์ ${this.getActiveLensDisplayName()} ไม่มีไฟแฟลชในตัว — ลองกด "สลับเลนส์กล้อง"`,
+          'เลนส์ที่เลือกอยู่อาจเป็นเลนส์มุมกว้าง (Ultra-Wide) หรือเลนส์ซูมที่ไม่มีแฟลช ให้กด "สลับเลนส์กล้อง" เพื่อไปยังเลนส์หลัก 1x'
+        );
+      }
+
+      return res;
+    } catch (err) {
+      this.isTorchScanning = false;
+      this.updateTorchStatusUI(
+        'idle',
+        'ไม่สามารถสลับไปยังเลนส์นี้ได้ — กำลังใช้โหมดไฟส่องสว่างจากหน้าจอ'
+      );
+      return { applied: false, confirmedByCaps: false, error: err };
+    }
+  }
+
+  /**
+   * Multi-Lens Hardware Flash Auto-Scanner:
+   * 1. Checks secure context & mediaDevices availability.
+   * 2. Tries saved preferred flash deviceId (if previously found) or default facingMode: 'environment'.
+   * 3. Binds stream to <video playsinline muted>, wakes up ImageCapture, and checks torch capability.
+   * 4. If default rear camera is an auxiliary lens without flash (e.g., Ultra-Wide on multi-camera phones),
+   *    automatically enumerates all rear cameras and probes each candidate until it finds the lens with the physical LED flash!
+   */
+  async scanAndActivateHardwareTorch(forceFullScan = false) {
+    if (this.isTorchScanning) return;
+
+    if (!window.isSecureContext || !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+      this.updateTorchStatusUI(
+        'idle',
+        'โหมดไฟส่องจากหน้าจอ (เบราว์เซอร์ต้องการ HTTPS เพื่อสั่งงานแฟลชกล้อง)',
+        'การสั่งเปิดไฟแฟลช LED กล้องหลังจากเว็บเบราว์เซอร์ต้องเปิดผ่าน HTTPS หรือ localhost เท่านั้น'
+      );
+      return;
+    }
+
+    this.isTorchScanning = true;
+    this.updateTorchStatusUI(
+      'scanning',
+      'กำลังค้นหาและเปิดไฟแฟลช LED กล้องหลังมือถือ...'
+    );
+
+    let savedDeviceId = null;
+    if (!forceFullScan) {
+      try {
+        savedDeviceId = localStorage.getItem(STORAGE_KEY_TORCH_DEVICE);
+      } catch (_) {}
+    }
+
+    try {
+      await this.releaseCurrentTorchStream();
+
+      // Step 1: Open initial rear camera stream (saved deviceId first if available, else ideal environment)
+      let initialStream = null;
+      if (savedDeviceId) {
+        try {
+          initialStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: { exact: savedDeviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          });
+        } catch (_) {
+          initialStream = null;
+        }
+      }
+
+      if (!initialStream) {
+        try {
+          initialStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          });
+        } catch (_) {
+          // Ultimate fallback: any video camera
+          initialStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+      }
+
+      const initialTrack = initialStream.getVideoTracks()[0];
+      if (!initialTrack) throw new Error('No video track available');
+
+      this.torchStream = initialStream;
+      this.torchTrack = initialTrack;
+      const initSettings = typeof initialTrack.getSettings === 'function' ? initialTrack.getSettings() : {};
+      this.activeTorchDeviceId = (initSettings && initSettings.deviceId) || savedDeviceId || null;
+
+      // Attach to <video> and wait for frames before querying capabilities/torch
+      await this.attachStreamToTorchVideo(initialStream);
+
+      // Now that camera permission is granted, enumerate all rear cameras for multi-lens phones
+      this.torchRearDevices = await this.enumerateAndRankRearCameras();
+      if (!this.activeTorchDeviceId && this.torchRearDevices.length > 0) {
+        this.activeTorchDeviceId = this.torchRearDevices[0].deviceId;
+      }
+
+      // Test torch on the initial camera track
+      const firstTry = await this.trySetTrackTorch(initialTrack, true);
+
+      if (firstTry.confirmedByCaps && firstTry.applied && !forceFullScan) {
+        this.isHardwareTorchOn = true;
+        this.isTorchScanning = false;
+        const dev = this.torchRearDevices.find((d) => d.deviceId === this.activeTorchDeviceId);
+        if (dev) dev.hasConfirmedTorch = true;
+        if (this.activeTorchDeviceId) {
+          try {
+            localStorage.setItem(STORAGE_KEY_TORCH_DEVICE, this.activeTorchDeviceId);
+          } catch (_) {}
+        }
+        this.updateTorchStatusUI(
+          'active',
+          `เปิดไฟแฟลช LED กล้องหลังสำเร็จ (${this.getActiveLensDisplayName()})`,
+          'ไฟแฟลช LED กล้องหลังเปิดทำงานแล้ว หันหลังมือถือส่องดูในซุ้มล้อหรือใต้ท้องรถผ่านจอกล้องด้านบนได้ทันที'
+        );
+        return;
+      }
+
+      // Step 2: Multi-Lens Scan!
+      // If the initial lens did not confirm torch support (e.g., browser picked Ultra-Wide 0.5x lens without flash),
+      // iterate through all ranked rear camera lenses to find the one with physical LED flash hardware.
+      const candidates = this.torchRearDevices.filter(
+        (d) => d.deviceId && (forceFullScan || d.deviceId !== this.activeTorchDeviceId)
+      );
+
+      let bestAppliedDeviceId = firstTry.applied ? this.activeTorchDeviceId : null;
+
+      for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i];
+        this.updateTorchStatusUI(
+          'scanning',
+          `กำลังสแกนหาเลนส์ที่มีไฟแฟลช LED (${i + 1}/${candidates.length}: ${candidate.cleanLabel})...`
+        );
+
+        await this.releaseCurrentTorchStream();
+
+        try {
+          const candStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: { exact: candidate.deviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          });
+          const candTrack = candStream.getVideoTracks()[0];
+          if (!candTrack) continue;
+
+          this.torchStream = candStream;
+          this.torchTrack = candTrack;
+          this.activeTorchDeviceId = candidate.deviceId;
+
+          await this.attachStreamToTorchVideo(candStream);
+          const candRes = await this.trySetTrackTorch(candTrack, true);
+
+          if (candRes.applied && !bestAppliedDeviceId) {
+            bestAppliedDeviceId = candidate.deviceId;
+          }
+
+          if (candRes.confirmedByCaps && candRes.applied) {
+            candidate.hasConfirmedTorch = true;
+            this.isHardwareTorchOn = true;
+            this.isTorchScanning = false;
+            try {
+              localStorage.setItem(STORAGE_KEY_TORCH_DEVICE, candidate.deviceId);
+            } catch (_) {}
+            this.updateTorchStatusUI(
+              'active',
+              `พบและเปิดไฟแฟลช LED กล้องหลังสำเร็จ (${candidate.cleanLabel})`,
+              'ระบบตรวจพบเลนส์หลักที่มีไฟแฟลช LED และจดจำเลนส์นี้ไว้ใช้ในครั้งถัดไปเรียบร้อยแล้ว'
+            );
+            return;
+          }
+        } catch (_) {
+          // Continue scanning next lens
+        }
+      }
+
+      // Step 3: If no lens explicitly advertised caps.torch === true in getCapabilities(),
+      // lock onto the highest-ranked rear camera (where applyConstraints succeeded or index 0)
+      this.isTorchScanning = false;
+      const fallbackTargetId =
+        bestAppliedDeviceId ||
+        (this.torchRearDevices[0] && this.torchRearDevices[0].deviceId) ||
+        null;
+
+      if (fallbackTargetId && fallbackTargetId !== this.activeTorchDeviceId) {
+        await this.switchToTorchCameraDevice(fallbackTargetId, true);
+        return;
+      }
+
+      if (this.torchTrack && this.torchTrack.readyState === 'live') {
+        const finalAttempt = await this.trySetTrackTorch(this.torchTrack, true);
+        this.isHardwareTorchOn = finalAttempt.applied;
+        this.updateTorchStatusUI(
+          finalAttempt.applied ? 'partial' : 'idle',
+          finalAttempt.applied
+            ? `เปิดกล้องหลังและส่งคำสั่งแฟลชแล้ว (${this.getActiveLensDisplayName()})`
+            : 'เบราว์เซอร์บนอุปกรณ์นี้ไม่เปิดสิทธิ์ควบคุมแฟลชแยก — ใช้กล้องส่องร่วมกับไฟหน้าจอแทน',
+          this.torchRearDevices.length > 1
+            ? 'หากไฟแฟลชหลังเครื่องยังไม่ติด ให้กดปุ่ม "สลับเลนส์กล้อง" ด้านบนเพื่อเปลี่ยนไปยังเลนส์ 1x ที่มีไฟแฟลช'
+            : 'คุณสามารถใช้ภาพจากกล้องโหมดเร่งแสงที่มืด (Night Boost) คู่กับความสว่างหน้าจอเพื่อส่องใต้ท้องรถได้'
+        );
+      }
+    } catch (err) {
+      this.isTorchScanning = false;
+      this.isHardwareTorchOn = false;
+      const isDenied = err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
+      this.updateTorchStatusUI(
+        'idle',
+        isDenied
+          ? 'ไม่ได้รับอนุญาตสิทธิ์กล้อง — กำลังใช้โหมดไฟส่องสว่างจากหน้าจอแทน'
+          : 'ไม่พบกล้องหลังที่รองรับไฟแฟลช — กำลังใช้โหมดไฟส่องสว่างจากหน้าจอแทน',
+        isDenied
+          ? 'หากต้องการเปิดไฟแฟลช LED กล้องหลัง โปรดอนุญาตสิทธิ์การใช้กล้อง (Camera Permission) ในแถบตั้งค่าเว็บของเบราว์เซอร์ แล้วกด "สแกนหาแฟลชใหม่"'
+          : 'หันหน้าจอสีขาวสว่างนี้ส่องเข้าไปในซุ้มล้อหรือใต้ท้องรถพร้อมกดส่งคลื่นเสียงไล่แมว/สุนัข'
+      );
+    }
+  }
+
+  /**
+   * Stops the hardware torch, strobe loop, and camera stream when closing the dialog
+   */
+  stopTorchCamera() {
+    this.isTorchStrobe = false;
+    this.isTorchScanning = false;
+    this.isHardwareTorchOn = false;
+
+    if (this.torchStrobeTimer) {
+      clearInterval(this.torchStrobeTimer);
+      this.torchStrobeTimer = null;
+    }
+
+    const lampBox = document.getElementById('torch-lamp-surface');
+    const strobeBtn = document.getElementById('btn-toggle-torch-strobe');
+    const stageEl = document.getElementById('torch-camera-stage');
+    const videoEl = document.getElementById('torch-camera-video');
+
+    if (lampBox) {
+      lampBox.setAttribute('data-strobe', 'false');
+      lampBox.setAttribute('data-camera-active', 'false');
+    }
+    if (strobeBtn) {
+      strobeBtn.textContent = 'เปิดไฟกะพริบเตือน (Strobe)';
+    }
+
+    if (this.torchTrack) {
+      try {
+        this.torchTrack.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
+      } catch (_) {}
+      try {
+        this.torchTrack.stop();
+      } catch (_) {}
+      this.torchTrack = null;
+    }
+
+    if (this.torchStream) {
+      this.torchStream.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch (_) {}
+      });
+      this.torchStream = null;
+    }
+
+    this.torchImageCapture = null;
+
+    if (videoEl) {
+      videoEl.srcObject = null;
+    }
+    if (stageEl) {
+      stageEl.setAttribute('hidden', '');
     }
   }
 

@@ -1030,25 +1030,82 @@
     </div>
   </section>
 
-  <!-- Under-Car High-Luminance Inspection Torch Dialog -->
-  <dialog id="inspection-torch-dialog" class="torch-dialog" aria-labelledby="torch-dialog-title">
+  <!-- Under-Car Hardware LED Torch & High-Luminance Inspection Dialog -->
+  <dialog id="inspection-torch-dialog" class="torch-dialog" closedby="any" aria-labelledby="torch-dialog-title">
     <div class="torch-dialog-inner">
-      <div id="torch-lamp-surface" class="torch-lamp-box" data-strobe="false">
-        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#11151A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-        </svg>
-        <p id="torch-dialog-title" style="font-family:var(--font-display); font-weight:700; font-size:1.15rem; margin:0.6rem 0 0.2rem; color:#11151A;">
-          ไฟส่องตรวจซุ้มล้อและใต้ท้องรถความสว่างสูง
-        </p>
-        <p style="margin:0; font-size:0.84rem; color:#4A453D;">
-          หันหน้าจอสีขาวสว่างนี้ส่องเข้าไปในซุ้มล้อหรือใต้ท้องรถพร้อมกดส่งคลื่นเสียงไล่แมว
-        </p>
+      <div class="torch-header-bar">
+        <div id="torch-hardware-badge" class="torch-hardware-badge" data-status="idle" role="status" aria-live="polite">
+          <span class="torch-badge-dot" aria-hidden="true"></span>
+          <span id="torch-hardware-status-text">กำลังเตรียมระบบไฟแฟลช LED กล้องหลัง...</span>
+        </div>
+        <button type="button" id="btn-rescan-torch" class="torch-mini-btn" title="สแกนหาเลนส์กล้องที่มีไฟแฟลชใหม่">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+            <path d="M16 16h5v5"/>
+          </svg>
+          <span>สแกนหาแฟลชใหม่</span>
+        </button>
+      </div>
+
+      <!-- Hardware LED Flash & Multi-Lens Controls -->
+      <div class="torch-hardware-controls">
+        <button type="button" id="btn-toggle-hardware-torch" class="btn-hardware-torch" data-torch-on="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+          <span id="btn-hardware-torch-label">เปิดไฟแฟลช LED กล้องหลัง</span>
+        </button>
+
+        <button type="button" id="btn-cycle-torch-lens" class="btn-lens-cycle" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+            <circle cx="12" cy="13" r="3"/>
+          </svg>
+          <span id="btn-cycle-lens-label">สลับเลนส์กล้องหลัง</span>
+        </button>
+      </div>
+
+      <div id="torch-lens-picker-row" class="torch-lens-picker-row" hidden>
+        <label for="torch-camera-select" class="torch-lens-label">เลนส์กล้องที่ใช้ส่งไฟแฟลช:</label>
+        <select id="torch-camera-select" class="torch-camera-select"></select>
+      </div>
+
+      <div id="torch-lamp-surface" class="torch-lamp-box" data-strobe="false" data-camera-active="false">
+        <!-- Live Rear Camera Under-Car Inspection Viewfinder (Required by mobile OS to keep hardware LED torch active & helps user see under the car) -->
+        <div id="torch-camera-stage" class="torch-camera-stage" hidden>
+          <video id="torch-camera-video" class="torch-camera-video" data-night-boost="true" data-zoom="1" playsinline muted autoplay></video>
+          <div class="torch-viewfinder-hud">
+            <span id="torch-active-lens-label" class="torch-lens-pill">กล้องหลัง (LED Torch)</span>
+            <div class="torch-hud-actions">
+              <button type="button" id="btn-toggle-night-boost" class="torch-hud-btn" data-active="true">
+                เร่งแสงที่มืด: เปิด
+              </button>
+              <button type="button" id="btn-toggle-camera-zoom" class="torch-hud-btn" data-active="false">
+                ซูม 1x
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="torch-screen-lamp-info" class="torch-screen-lamp-info">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#11151A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+          </svg>
+          <p id="torch-dialog-title" style="font-family:var(--font-display); font-weight:700; font-size:1.1rem; margin:0.5rem 0 0.2rem; color:#11151A;">
+            โหมดไฟฉายแฟลชกล้องหลัง &amp; จอส่องตรวจใต้ท้องรถ
+          </p>
+          <p id="torch-diagnostic-hint" style="margin:0; font-size:0.82rem; color:#4A453D; line-height:1.45;">
+            ระบบจะค้นหาเลนส์กล้องหลังหลักที่มีไฟแฟลช LED อัตโนมัติ (หากมือถือมีหลายเลนส์แล้วแฟลชไม่ติด ให้กดปุ่ม "สลับเลนส์กล้องหลัง" ด้านบน)
+          </p>
+        </div>
       </div>
 
       <div style="display:flex; flex-wrap:wrap; gap:0.65rem; justify-content:center;">

@@ -28,12 +28,35 @@
           </svg>
         </div>
         <div>
-          <h1 class="brand-title">CattySafe · ระบบส่งคลื่นเสียงป้องกันแมวใต้ท้องรถ</h1>
-          <p class="brand-subtitle">เครื่องสังเคราะห์ความถี่ชีวภาพ 13.5–19.5 kHz &amp; โปรโตคอลตรวจเช็คห้องเครื่อง Neko Ban Ban</p>
+          <h1 id="brand-title-text" class="brand-title">CattySafe · ระบบส่งคลื่นเสียงป้องกันแมวและสุนัขใต้ท้องรถ</h1>
+          <p id="brand-subtitle-text" class="brand-subtitle">เครื่องสังเคราะห์ความถี่ชีวภาพ 12.0–19.5 kHz &amp; โปรโตคอลตรวจเช็คใต้รถก่อนขับ</p>
         </div>
       </div>
 
       <div class="top-controls">
+        <div class="species-toggle-group" role="group" aria-label="สลับโหมดสัตว์ (โหมดแมว หรือ โหมดสุนัข)">
+          <button type="button" id="btn-species-cat" class="species-toggle-btn" data-species="cat" aria-pressed="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3.1-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.23 6.5 2.23A9.04 9.04 0 0 1 12 5Z"/>
+              <path d="M8 14v.5"/>
+              <path d="M16 14v.5"/>
+              <path d="M11.25 16.25h1.5L12 17l-.75-.75Z"/>
+            </svg>
+            <span>โหมดแมว</span>
+          </button>
+          <button type="button" id="btn-species-dog" class="species-toggle-btn" data-species="dog" aria-pressed="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 5.172C10 3.782 8.423 2.679 6.5 3c-2.823.47-4.113 6.006-4 7 .08.703 1.725 1.722 3.656 1 1.261-.472 1.96-1.45 2.344-2.5"/>
+              <path d="M14.267 5.172c0-1.39 1.577-2.493 3.5-2.172 2.823.47 4.113 6.006 4 7-.08.703-1.725 1.722-3.656 1-1.261-.472-1.855-1.45-2.239-2.5"/>
+              <path d="M8 14v.5"/>
+              <path d="M16 14v.5"/>
+              <path d="M11.25 16.25h1.5L12 17l-.75-.75Z"/>
+              <path d="M4.42 11.247A13.152 13.152 0 0 0 4 14.556C4 18.728 7.582 21 12 21s8-2.272 8-6.444c0-1.061-.162-2.2-.493-3.309m-9.243-6.082A8.801 8.801 0 0 1 12 5c.78 0 1.5.108 2.161.306"/>
+            </svg>
+            <span>โหมดสุนัข</span>
+          </button>
+        </div>
+
         <div id="top-telemetry-pill" class="telemetry-pill" data-active="false" role="status" aria-live="polite">
           <span class="status-dot" aria-hidden="true"></span>
           <span id="top-status-text" class="tabular-nums">สแตนด์บายพร้อมส่งเสียง</span>
@@ -70,8 +93,8 @@
         <div class="smart-sweep-banner">
           <div class="sweep-header-row">
             <div>
-              <h2 id="sweep-console-heading" class="sweep-heading">โปรแกรมส่งคลื่นเสียงเคลียร์รถอัตโนมัติ 20 วินาที</h2>
-              <p class="sweep-lead">
+              <h2 id="sweep-console-heading" class="sweep-heading">โปรแกรมส่งคลื่นเสียงเคลียร์รถอัตโนมัติ 20 วินาที (โหมดแมว)</h2>
+              <p id="sweep-lead-text" class="sweep-lead">
                 กดปุ่มเดียวก่อนขึ้นรถ ระบบจะไล่ส่งคลื่นเสียง 4 รูปแบบต่อเนื่อง (เคาะทุ้มปลุกแมวหลับ → คลื่นความถี่สูงกวาด 13.5–19.5 kHz → เสียงแมวเจ้าถิ่นขู่ฟ่อ → เสียงเขย่าโลหะ) เพื่อป้องกันแมวชินกับเสียงเดิม
               </p>
             </div>
@@ -113,19 +136,19 @@
             <div class="sweep-stage-pills">
               <div class="stage-step-chip" data-stage="1" data-current="false">
                 <span class="tabular-nums">0–4s</span>
-                <span>เคาะปลุก 75–380Hz</span>
+                <span id="stage-chip-label-1">เคาะปลุก 75–380Hz</span>
               </div>
               <div class="stage-step-chip" data-stage="2" data-current="false">
                 <span class="tabular-nums">4–10s</span>
-                <span>กวาดคลื่น 13.5–19.5kHz</span>
+                <span id="stage-chip-label-2">กวาดคลื่น 13.5–19.5kHz</span>
               </div>
               <div class="stage-step-chip" data-stage="3" data-current="false">
                 <span class="tabular-nums">10–15s</span>
-                <span>ขู่ฟ่อ 3.5–11.5kHz</span>
+                <span id="stage-chip-label-3">ขู่ฟ่อ 3.5–11.5kHz</span>
               </div>
               <div class="stage-step-chip" data-stage="4" data-current="false">
                 <span class="tabular-nums">15–20s</span>
-                <span>เขย่าโลหะ 4–15kHz</span>
+                <span id="stage-chip-label-4">เขย่าโลหะ 4–15kHz</span>
               </div>
             </div>
           </div>
@@ -167,7 +190,7 @@
             <div class="legend-items">
               <span class="legend-entry">
                 <span class="legend-swatch" style="background:#FF7A45;"></span>
-                <span>เส้นความไวหูแมว (45 Hz – 64 kHz · ไวสุดที่ 500 Hz – 32 kHz)</span>
+                <span id="audiogram-species-legend">เส้นความไวหูแมว (45 Hz – 64 kHz · ไวสุดที่ 500 Hz – 32 kHz)</span>
               </span>
               <span class="legend-entry">
                 <span class="legend-swatch" style="background:#6D9DC5;"></span>
@@ -178,7 +201,7 @@
                 <span>พลังงานคลื่นเสียงที่ส่งออกจริงจากลำโพง</span>
               </span>
             </div>
-            <span>แถบสีส้ม = ย่าน 13.5–19.5 kHz ที่ลำโพงมือถือส่งออกได้เต็มพลังและแมวรำคาญสูงสุด</span>
+            <span id="audiogram-band-legend">แถบสีส้ม = ย่าน 13.5–19.5 kHz ที่ลำโพงมือถือส่งออกได้เต็มพลังและแมวรำคาญสูงสุด</span>
           </div>
         </div>
 
@@ -188,14 +211,14 @@
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
-            <span>เสียงไล่แมวใต้รถ (6)</span>
+            <span id="tab-deter-label">เสียงไล่แมวใต้รถ (6)</span>
           </button>
 
           <button type="button" id="tab-btn-coax" class="mode-tab-btn" role="tab" aria-selected="false" aria-controls="panel-coax" data-mode-theme="coax">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
             </svg>
-            <span>เสียงล่อออกจากห้องเครื่อง (4)</span>
+            <span id="tab-coax-label">เสียงล่อออกจากห้องเครื่อง (4)</span>
           </button>
 
           <button type="button" id="tab-btn-listen" class="mode-tab-btn" role="tab" aria-selected="false" aria-controls="panel-listen" data-mode-theme="listen">
@@ -231,14 +254,14 @@
               <line x1="12" x2="12" y1="8" y2="12"/>
               <line x1="12" x2="12.01" y1="16" y2="16"/>
             </svg>
-            <div>
+            <div id="deter-context-banner-text">
               <strong>โหมดไล่แมวใต้ท้องรถและซุ้มล้อ (Deter &amp; Flush):</strong> ใช้เมื่อแมวซ่อนตัวอยู่ใต้ท้องรถ บนยางล้อ หรือซุ้มล้อที่มีทางวิ่งหนีออกด้านนอกชัดเจน คลื่นเสียงจะกระตุ้นสัญชาตญาณระวังภัยและความรำคาญในกรวยหูแมวโดยไม่ทำอันตรายต่อแก้วหู
             </div>
           </div>
 
           <div class="sound-grid">
-            <!-- Profile 1: Ultrasonic FM Sweep -->
-            <article class="sound-trigger-row" data-profile-id="ultrasonic-sweep" data-playing="false">
+            <!-- Profile 1: Ultrasonic FM Sweep (Cat) -->
+            <article class="sound-trigger-row" data-species-card="cat" data-profile-id="ultrasonic-sweep" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">คลื่นความถี่สูงกวาดสลับ (FM Sweep)</h3>
@@ -259,8 +282,8 @@
               </div>
             </article>
 
-            <!-- Profile 2: Aggressive Feline Hiss -->
-            <article class="sound-trigger-row" data-profile-id="feline-hiss" data-playing="false">
+            <!-- Profile 2: Aggressive Feline Hiss (Cat) -->
+            <article class="sound-trigger-row" data-species-card="cat" data-profile-id="feline-hiss" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">เสียงแมวเจ้าถิ่นขู่ฟ่อและพ่นลม (Hiss &amp; Spit)</h3>
@@ -281,8 +304,8 @@
               </div>
             </article>
 
-            <!-- Profile 3: Metallic Shaker Can -->
-            <article class="sound-trigger-row" data-profile-id="metallic-shaker" data-playing="false">
+            <!-- Profile 3: Metallic Shaker Can (Cat) -->
+            <article class="sound-trigger-row" data-species-card="cat" data-profile-id="metallic-shaker" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">เสียงเขย่ากระป๋องโลหะ/เหรียญ (Shaker Can)</h3>
@@ -303,8 +326,8 @@
               </div>
             </article>
 
-            <!-- Profile 4: Canine Growl & Bark -->
-            <article class="sound-trigger-row" data-profile-id="canine-warning" data-playing="false">
+            <!-- Profile 4: Canine Growl & Bark (Cat) -->
+            <article class="sound-trigger-row" data-species-card="cat" data-profile-id="canine-warning" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">เสียงสุนัขคำรามและเห่าเตือน (Canine Bark)</h3>
@@ -325,8 +348,8 @@
               </div>
             </article>
 
-            <!-- Profile 5: Dual-Band Bio-Alarm -->
-            <article class="sound-trigger-row" data-profile-id="dual-bio-alarm" data-playing="false">
+            <!-- Profile 5: Dual-Band Bio-Alarm (Cat) -->
+            <article class="sound-trigger-row" data-species-card="cat" data-profile-id="dual-bio-alarm" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">ไซเรนความถี่คู่รบกวนทิศทาง (Dual Chirp)</h3>
@@ -347,8 +370,8 @@
               </div>
             </article>
 
-            <!-- Profile 6: Neko Ban Ban Knock -->
-            <article class="sound-trigger-row" data-profile-id="neko-banban-knock" data-playing="false">
+            <!-- Profile 6: Neko Ban Ban Knock (Cat) -->
+            <article class="sound-trigger-row" data-species-card="cat" data-profile-id="neko-banban-knock" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">เสียงเคาะฝากระโปรงปลุกแมว (Knock Pulse)</h3>
@@ -368,10 +391,142 @@
                 </button>
               </div>
             </article>
+
+            <!-- DOG DETER 1: Silent Dog Whistle Sweep -->
+            <article class="sound-trigger-row" data-species-card="dog" data-profile-id="dog-whistle-sweep" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">คลื่นนกหวีดสุนัขความถี่สูงกวาด (Dog Whistle)</h3>
+                  <span class="sound-freq-badge">12.0 – 18.5 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  จำลองคลื่นนกหวีดฝึกสุนัข (Galton Whistle) กวาดสลับในย่าน 12–18.5 kHz สุนัขได้ยินชัดเจนและลุกออกจากใต้ท้องรถโดยไม่รบกวนเพื่อนบ้าน
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Canine Gain: +13 dB · ประสิทธิผล 95%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- DOG DETER 2: Trainer Shaker Can -->
+            <article class="sound-trigger-row" data-species-card="dog" data-profile-id="dog-shaker-interrupter" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงกระป๋องเขย่าเหรียญครูฝึกสุนัข (Shaker Can)</h3>
+                  <span class="sound-freq-badge">4.0 – 14.0 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  อุปกรณ์มาตรฐานครูฝึกสุนัข สร้างหัวคลื่นโลหะตรงจุดพีคหูสุนัข (4–8 kHz) ใช้ปลุกสุนัขที่นอนหลับลึกใต้ท้องรถหรือขวางล้อได้ดีที่สุด
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Canine Gain: +14 dB · ประสิทธิผล 96%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- DOG DETER 3: Canine Peak-Hearing Sonar Ping -->
+            <article class="sound-trigger-row" data-species-card="dog" data-profile-id="dog-sonar-ping" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">คลื่นโซนาร์พัลส์จุดพีคหูสุนัข (Peak Ping)</h3>
+                  <span class="sound-freq-badge">4.2 – 7.8 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  ยิงพัลส์สั้นความถี่ 4.2–7.8 kHz ซึ่งเป็นจุดที่โสตประสาทสุนัขไวที่สุดตามธรรมชาติ เพื่อเคลียร์จุดบอดหลังล้อรถก่อนถอยหลัง
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Canine Gain: +15 dB · ประสิทธิผล 92%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- DOG DETER 4: Startle Air-Horn Pulse -->
+            <article class="sound-trigger-row" data-species-card="dog" data-profile-id="dog-airhorn-burst" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงแตรลมเตือนสุนัขหลับลึก/หูตึง (Horn Pulse)</h3>
+                  <span class="sound-freq-badge">280 – 1,850 Hz</span>
+                </div>
+                <p class="sound-desc">
+                  คลื่นเสียงแตรลมความถี่ต่ำ-กลาง สำหรับเตือนสุนัขโตหรือสุนัขสูงวัยที่เริ่มหูตึงในย่านความถี่สูงให้ถอยห่างจากแนวรถ
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Senior Dog Safe · ประสิทธิผล 93%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- DOG DETER 5: Wheel-Well Defensive Hiss -->
+            <article class="sound-trigger-row" data-species-card="dog" data-profile-id="dog-feline-warning" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงขู่ฟ่อหยุดสุนัขคุ้ยซุ้มล้อ (Defensive Hiss)</h3>
+                  <span class="sound-freq-badge">3.5 – 11.5 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  เสียงพ่นลมขู่ฟ่อทำให้สุนัขระแวงว่าจะถูกข่วนจมูก ใช้หยุดสุนัขที่กำลังมุดคุ้ยซุ้มล้อหรือกัดสายไฟเซ็นเซอร์ใต้กันชน
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Bumper Guard · ประสิทธิผล 88%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- DOG DETER 6: Chassis Wake Thump -->
+            <article class="sound-trigger-row" data-species-card="dog" data-profile-id="dog-chassis-thump" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงเคาะตัวถังปลุกสุนัข (Chassis Thump)</h3>
+                  <span class="sound-freq-badge">65 – 320 Hz + สั่น</span>
+                </div>
+                <p class="sound-desc">
+                  คลื่นกระแทกความถี่ต่ำพร้อมแรงสั่นสะเทือน ช่วยเตือนสุนัขที่นอนพิงยางรถยนต์ให้รู้สึกตัวก่อนที่รถจะเคลื่อนตัว
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Vibro-Acoustic · ประสิทธิผล 87%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
           </div>
         </div>
 
-        <!-- TAB PANEL 2: COAX & LURE PROFILES (ENGINE BAY PARADOX SOLUTION) -->
+        <!-- TAB PANEL 2: COAX & LURE PROFILES -->
         <div id="panel-coax" class="mode-panel" role="tabpanel" aria-labelledby="tab-btn-coax" hidden>
           <div class="mode-context-banner coax-banner">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;" aria-hidden="true">
@@ -379,14 +534,14 @@
               <line x1="12" x2="12" y1="9" y2="13"/>
               <line x1="12" x2="12.01" y1="17" y2="17"/>
             </svg>
-            <div>
+            <div id="coax-context-banner-text">
               <strong>ทำไมต้องใช้เสียงล่อเมื่อแมวติดในห้องเครื่อง? (Engine Bay Paradox):</strong> หากลูกแมวมุดเข้าไปซุกในห้องเครื่องลึกๆ การบีบแตรหรือเปิดเสียงขู่ดังๆ อาจทำให้แมวกลัวสุดขีดแล้ว <em>ตัวแข็งทื่อ (Freeze) หรือมุดหนีลึกเข้าไปในสายพานเครื่องยนต์</em> ให้วางมือถือบนพื้นห่างจากหน้ารถ 1.5–2 เมตร แล้วเปิดเสียงล่อด้านล่างเพื่อให้แมวเดินออกมาเอง
             </div>
           </div>
 
           <div class="sound-grid">
-            <!-- Coax 1: Kitten Contact Call -->
-            <article class="sound-trigger-row coax-variant" data-profile-id="kitten-contact-call" data-playing="false">
+            <!-- Coax 1: Kitten Contact Call (Cat) -->
+            <article class="sound-trigger-row coax-variant" data-species-card="cat" data-profile-id="kitten-contact-call" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">เสียงลูกแมวร้องเรียกแม่ (Kitten Contact Meow)</h3>
@@ -407,8 +562,8 @@
               </div>
             </article>
 
-            <!-- Coax 2: Wet Food Can & Kibble -->
-            <article class="sound-trigger-row coax-variant" data-profile-id="food-can-kibble" data-playing="false">
+            <!-- Coax 2: Wet Food Can & Kibble (Cat) -->
+            <article class="sound-trigger-row coax-variant" data-species-card="cat" data-profile-id="food-can-kibble" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">เสียงเปิดกระป๋องอาหารและเทอาหารเม็ด</h3>
@@ -429,8 +584,8 @@
               </div>
             </article>
 
-            <!-- Coax 3: Prey Squeak -->
-            <article class="sound-trigger-row coax-variant" data-profile-id="prey-squeak" data-playing="false">
+            <!-- Coax 3: Prey Squeak (Cat) -->
+            <article class="sound-trigger-row coax-variant" data-species-card="cat" data-profile-id="prey-squeak" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">เสียงหนูร้องจี๊ดกระตุ้นความสนใจ (Prey Squeak)</h3>
@@ -451,8 +606,8 @@
               </div>
             </article>
 
-            <!-- Coax 4: Maternal Friendly Trill -->
-            <article class="sound-trigger-row coax-variant" data-profile-id="friendly-trill" data-playing="false">
+            <!-- Coax 4: Maternal Friendly Trill (Cat) -->
+            <article class="sound-trigger-row coax-variant" data-species-card="cat" data-profile-id="friendly-trill" data-playing="false">
               <div>
                 <div class="sound-row-top">
                   <h3 class="sound-title-th">เสียงแม่แมวทักทาย Prrp-Trill (Friendly Call)</h3>
@@ -464,6 +619,94 @@
               </div>
               <div class="sound-row-actions">
                 <span class="pinnae-tag">Calming Signal · ประสิทธิผลล่อออก 88%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- DOG COAX 1: Squeaky Toy Lure -->
+            <article class="sound-trigger-row coax-variant" data-species-card="dog" data-profile-id="dog-squeaky-toy" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงตุ๊กตาบีบปี๊บดึงดูดสุนัข (Squeaky Toy)</h3>
+                  <span class="sound-freq-badge">2.2 – 5.4 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  สังเคราะห์เสียงลิ้นลมของเล่นสุนัขจังหวะบีบ-คลาย กระตุ้นความตื่นเต้นให้สุนัขรีบคลานออกจากใต้ท้องรถมาหาต้นเสียงทันที
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Play Instinct · ประสิทธิผลล่อออก 96%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- DOG COAX 2: Upward Recall Whistle -->
+            <article class="sound-trigger-row coax-variant" data-species-card="dog" data-profile-id="dog-recall-whistle" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงผิวปากเรียกสุนัขเป็นมิตร (Recall Whistle)</h3>
+                  <span class="sound-freq-badge">1.4 – 3.2 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  คลื่นเสียงผิวปากตวัดขึ้น 2 พยางค์ ซึ่งสุนัขจดจำว่าเป็นสัญญาณเรียกให้เดินเข้ามาหาอย่างเป็นมิตรจากเจ้าของ
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Human Recall · ประสิทธิผลล่อออก 92%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- DOG COAX 3: Stainless Bowl & Kibble -->
+            <article class="sound-trigger-row coax-variant" data-species-card="dog" data-profile-id="dog-bowl-kibble" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงเคาะชามข้าวสแตนเลสและเทอาหารเม็ด</h3>
+                  <span class="sound-freq-badge">1.6 – 8.8 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  จำลองเสียงชามสแตนเลสกระทบพื้นตามด้วยอาหารเม็ดร่วงกราว ดึงดูดสุนัขจรที่นอนหลบแดดใต้ท้องรถให้ลุกเดินออกมาทันที
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Food Pavlovian · ประสิทธิผลล่อออก 94%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- DOG COAX 4: Puppy Contact Whimper -->
+            <article class="sound-trigger-row coax-variant" data-species-card="dog" data-profile-id="dog-puppy-whine" data-playing="false" hidden>
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงลูกสุนัขครางเรียกแม่ (Puppy Whimper)</h3>
+                  <span class="sound-freq-badge">680 – 2,100 Hz</span>
+                </div>
+                <p class="sound-desc">
+                  เสียงร้องหงิงๆ ความถี่อ่อนโยน ช่วยเรียกลูกสุนัขหรือแม่สุนัขที่แอบซุกอยู่ในซุ้มล้อหรือใต้กันชนหน้าให้เดินออกมาอย่างปลอดภัย
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Canine Social · ประสิทธิผลล่อออก 90%</span>
                 <button type="button" class="btn-sound-play">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <polygon points="5 3 19 12 5 21 5 3"/>
@@ -609,21 +852,21 @@
             <g class="car-zone-hotspot" data-zone-hotspot="engine-bay" data-selected="true" data-cleared="false" tabindex="0" role="button" aria-label="โซน A: ห้องเครื่องยนต์และสายพานหน้าเครื่อง ความเสี่ยงสูงสุด 62%">
               <rect class="zone-shape" x="44" y="54" width="76" height="112" rx="18" fill="rgba(242, 100, 48, 0.30)" stroke="#F26430" stroke-width="2.5"/>
               <text x="82" y="104" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="currentColor">ZONE A</text>
-              <text x="82" y="120" text-anchor="middle" font-family="Noto Sans Thai, sans-serif" font-size="10.5" font-weight="700" fill="currentColor">ห้องเครื่อง 62%</text>
+              <text id="svg-zone-a-label" x="82" y="120" text-anchor="middle" font-family="Noto Sans Thai, sans-serif" font-size="10.5" font-weight="700" fill="currentColor">ห้องเครื่อง 62%</text>
             </g>
 
             <!-- ZONE C: Undercarriage & Catalytic Converter (Center Chassis) -->
             <g class="car-zone-hotspot" data-zone-hotspot="undercarriage" data-selected="false" data-cleared="false" tabindex="0" role="button" aria-label="โซน C: ใต้ท้องรถและแคตตาไลติก ความเสี่ยง 11%">
               <rect class="zone-shape" x="132" y="62" width="106" height="96" rx="10" fill="rgba(120, 110, 96, 0.14)" stroke="#8C8273" stroke-width="1.5"/>
               <text x="185" y="105" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="currentColor">ZONE C</text>
-              <text x="185" y="121" text-anchor="middle" font-family="Noto Sans Thai, sans-serif" font-size="10.5" font-weight="700" fill="currentColor">ใต้ท้องรถ 11%</text>
+              <text id="svg-zone-c-label" x="185" y="121" text-anchor="middle" font-family="Noto Sans Thai, sans-serif" font-size="10.5" font-weight="700" fill="currentColor">ใต้ท้องรถ 11%</text>
             </g>
 
             <!-- ZONE D: Rear Exhaust & Rear Wheels -->
             <g class="car-zone-hotspot" data-zone-hotspot="rear-exhaust" data-selected="false" data-cleared="false" tabindex="0" role="button" aria-label="โซน D: ล้อหลังและท่อพักไอเสีย ความเสี่ยง 6%">
               <rect class="zone-shape" x="248" y="54" width="66" height="112" rx="16" fill="rgba(120, 110, 96, 0.14)" stroke="#8C8273" stroke-width="1.5"/>
               <text x="281" y="105" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="currentColor">ZONE D</text>
-              <text x="281" y="121" text-anchor="middle" font-family="Noto Sans Thai, sans-serif" font-size="10" font-weight="700" fill="currentColor">ท่อไอเสีย 6%</text>
+              <text id="svg-zone-d-label" x="281" y="121" text-anchor="middle" font-family="Noto Sans Thai, sans-serif" font-size="10" font-weight="700" fill="currentColor">ท่อไอเสีย 6%</text>
             </g>
           </svg>
         </div>
@@ -659,28 +902,28 @@
           <li class="zone-stub-item" data-zone-stub="engine-bay" data-selected="true" data-cleared="false">
             <div class="zone-stub-left">
               <span class="zone-code-tag">ZONE A</span>
-              <span class="zone-stub-title">เคาะฝากระโปรง &amp; เช็คห้องเครื่อง</span>
+              <span id="stub-title-engine-bay" class="zone-stub-title">เคาะฝากระโปรง &amp; เช็คห้องเครื่อง</span>
             </div>
             <span class="zone-stamp-status">รอตรวจเช็ค</span>
           </li>
           <li class="zone-stub-item" data-zone-stub="wheel-wells" data-selected="false" data-cleared="false">
             <div class="zone-stub-left">
               <span class="zone-code-tag">ZONE B</span>
-              <span class="zone-stub-title">ซุ้มล้อหน้า &amp; บนหน้ายางทั้ง 2 ฝั่ง</span>
+              <span id="stub-title-wheel-wells" class="zone-stub-title">ซุ้มล้อหน้า &amp; บนหน้ายางทั้ง 2 ฝั่ง</span>
             </div>
             <span class="zone-stamp-status">รอตรวจเช็ค</span>
           </li>
           <li class="zone-stub-item" data-zone-stub="undercarriage" data-selected="false" data-cleared="false">
             <div class="zone-stub-left">
               <span class="zone-code-tag">ZONE C</span>
-              <span class="zone-stub-title">ใต้ท้องรถ &amp; แคตตาไลติกคอนเวอร์เตอร์</span>
+              <span id="stub-title-undercarriage" class="zone-stub-title">ใต้ท้องรถ &amp; แคตตาไลติกคอนเวอร์เตอร์</span>
             </div>
             <span class="zone-stamp-status">รอตรวจเช็ค</span>
           </li>
           <li class="zone-stub-item" data-zone-stub="rear-exhaust" data-selected="false" data-cleared="false">
             <div class="zone-stub-left">
               <span class="zone-code-tag">ZONE D</span>
-              <span class="zone-stub-title">ซุ้มล้อหลัง &amp; ท่อพักไอเสีย</span>
+              <span id="stub-title-rear-exhaust" class="zone-stub-title">ซุ้มล้อหลัง &amp; ท่อพักไอเสีย</span>
             </div>
             <span class="zone-stamp-status">รอตรวจเช็ค</span>
           </li>
@@ -695,19 +938,19 @@
     </div>
   </main>
 
-  <!-- Scientific Research & Feline Ethology Monograph Section -->
+  <!-- Scientific Research & Feline/Canine Ethology Monograph Section -->
   <section class="research-section" aria-labelledby="research-main-heading">
     <div class="research-header">
-      <h2 id="research-main-heading" class="research-title">ข้อมูลวิจัยวิทยาศาสตร์: แมวกลัวเสียงอะไร และทำไมเสียงจากมือถือต้องออกแบบเฉพาะ?</h2>
+      <h2 id="research-main-heading" class="research-title">ข้อมูลวิจัยวิทยาศาสตร์: แมวและสุนัขกลัวเสียงอะไร และทำไมเสียงจากมือถือต้องออกแบบเฉพาะ?</h2>
       <p class="research-intro">
-        สรุปผลการศึกษาด้านโสตประสาทของแมว (Heffner &amp; Heffner, 1985), พฤติกรรมศาสตร์สัตว์ตระกูลแมว (Feline Ethology), และแนวทางป้องกันอุบัติเหตุแมวติดใต้รถจากโครงการ Neko Ban Ban (猫バンバン) ของประเทศญี่ปุ่น
+        สรุปผลการศึกษาด้านโสตประสาทของแมวและสุนัข (Heffner &amp; Heffner, 1985; Lindsay, 2000), พฤติกรรมศาสตร์สัตว์เลี้ยง และแนวทางป้องกันอุบัติเหตุสัตว์หลบใต้รถจากโครงการ Neko Ban Ban (猫バンバン)
       </p>
     </div>
 
     <div class="research-two-col">
-      <!-- Block 1: Feline vs Human Auditory Table & Smartphone Speaker Limits -->
+      <!-- Block 1: Feline vs Canine vs Human Auditory Table & Smartphone Speaker Limits -->
       <div class="research-block">
-        <h3 class="block-heading">เปรียบเทียบประสาทหูแมว vs มนุษย์ และขีดจำกัดลำโพงมือถือ</h3>
+        <h3 class="block-heading">เปรียบเทียบประสาทหู แมว vs สุนัข vs มนุษย์ และขีดจำกัดลำโพงมือถือ</h3>
         <div class="audiology-table-wrap">
           <table class="audiology-table">
             <thead>
@@ -715,7 +958,7 @@
                 <th scope="col">พารามิเตอร์ทางเสียง</th>
                 <th scope="col">มนุษย์ (Human)</th>
                 <th scope="col">แมวบ้าน (Felis catus)</th>
-                <th scope="col">การประยุกต์ใช้ใน CattySafe</th>
+                <th scope="col">สุนัขบ้าน (Canis familiaris)</th>
               </tr>
             </thead>
             <tbody>
@@ -723,24 +966,25 @@
                 <td><strong>ช่วงความถี่ที่ได้ยิน</strong></td>
                 <td class="tabular-nums">20 Hz – 20 kHz</td>
                 <td class="tabular-nums"><strong>45 Hz – 64 kHz</strong> (สูงสุด ~79 kHz)</td>
-                <td>แมวได้ยินเสียงแหลมสูงกว่ามนุษย์ถึง 3.5 เท่า</td>
+                <td class="tabular-nums"><strong>67 Hz – 45 kHz</strong> (พันธุ์หูตั้ง ~60 kHz)</td>
               </tr>
               <tr>
                 <td><strong>ย่านที่หูไวที่สุด</strong></td>
                 <td class="tabular-nums">1 kHz – 4 kHz</td>
-                <td class="tabular-nums"><strong>500 Hz – 32 kHz</strong> (จุดพีค 8 kHz)</td>
-                <td>เน้นส่งพลังงานคลื่นในช่วง 3.5 kHz – 19.5 kHz</td>
+                <td class="tabular-nums"><strong>500 Hz – 32 kHz</strong> (พีค 8 kHz)</td>
+                <td class="tabular-nums"><strong>500 Hz – 16 kHz</strong> (พีค 4–8 kHz)</td>
               </tr>
               <tr>
-                <td><strong>การขยายเสียงด้วยใบหู (Pinnae)</strong></td>
-                <td class="tabular-nums">+3 ถึง +5 dB</td>
-                <td class="tabular-nums"><strong>+8 ถึง +15 dB (ขยาย 2–3 เท่า)</strong></td>
-                <td>ใบหูรูปกรวยหมุนได้ 180° ขยายเสียงฟ่อและเสียงโลหะกระทบกันจนแมวทนไม่ได้</td>
+                <td><strong>สัญญาณไล่ที่ผละออกไวสุด</strong></td>
+                <td>แตรรถยนต์ 400–2k Hz</td>
+                <td>คลื่นกวาด 13.5–19.5 kHz, เสียงแมวขู่ฟ่อ</td>
+                <td>นกหวีดสุนัข 12–18.5 kHz, กระป๋องเขย่า Pet Corrector</td>
               </tr>
               <tr>
-                <td><strong>ข้อจำกัดลำโพงสมาร์ทโฟน</strong></td>
-                <td colspan="2">วงจร DAC และลำโพงมือถือทั่วไปตัดสัญญาณเหนือ <strong>19.5 – 20 kHz</strong> ทิ้ง (ทำให้แอพที่อ้างว่าปล่อย 25 kHz ไม่มีเสียงออกจริง)</td>
-                <td>ใช้ <strong>Stochastic FM Sweep 13.5–19.5 kHz</strong> ซึ่งออกลำโพงมือถือจริง 100%</td>
+                <td><strong>สัญญาณล่อเมื่อซ่อนลึก</strong></td>
+                <td>เสียงเรียกด้วยคำพูด</td>
+                <td>เสียงลูกแมวร้อง (1.2 kHz), เปิดกระป๋องอาหาร</td>
+                <td>ตุ๊กตาบีบปี๊บ (2.2–5.4 kHz), ผิวปากเรียกขึ้น, เคาะชามข้าว</td>
               </tr>
             </tbody>
           </table>

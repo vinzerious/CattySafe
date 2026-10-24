@@ -150,8 +150,9 @@ export const SOUND_PROFILES = {
   },
   'friendly-trill': {
     id: 'friendly-trill',
+    species: 'cat',
     category: 'coax',
-    nameTh: 'เสียงแมวทักทาย Prrp + เสียงเรียกคุ้นเคย (Friendly Trill)',
+    nameTh: 'เสียงแม่แมวทักทาย Prrp + เสียงเรียกคุ้นเคย (Friendly Trill)',
     nameEn: '420–1,400 Hz Vibrato Trill & Soft Sibilance',
     freqLabel: '420 – 1,400 Hz',
     primaryHz: 780,
@@ -162,6 +163,170 @@ export const SOUND_PROFILES = {
     effectiveness: 88,
     mechanismTh: 'เสียงสั่นเครือในลำคอ (Chirrup/Trill 28 Hz vibrato บนคลื่น 600–1,200 Hz) ที่แม่แมวใช้เรียกลูกให้เดินตาม เป็นสัญญาณความปลอดภัยสูง',
     usageTipTh: 'เหมาะสำหรับลูกแมวที่ตื่นกลัวเสียงดังหลังเคาะฝากระโปรงรถแล้วไม่กล้าวิ่งออกมา'
+  },
+
+  // === DOG DETER / WAKE PROFILES (โหมดปลุกและไล่สุนัขใต้ท้องรถ/จุดบอดล้อ) ===
+  'dog-whistle-sweep': {
+    id: 'dog-whistle-sweep',
+    species: 'dog',
+    category: 'deter',
+    nameTh: 'คลื่นนกหวีดสุนัขความถี่สูงกวาด (Silent Dog Whistle Sweep)',
+    nameEn: '12.0–18.5 kHz Galton Whistle FM Sweep',
+    freqLabel: '12,000 – 18,500 Hz',
+    primaryHz: 15400,
+    bandMin: 12000,
+    bandMax: 18500,
+    pinnaeGainDb: '+13 dB',
+    targetZone: 'undercarriage',
+    effectiveness: 95,
+    mechanismTh: 'จำลองคลื่นนกหวีดฝึกสุนัข (Galton Ultrasonic-Edge Whistle) กวาดสลับในย่าน 12.0–18.5 kHz ซึ่งสุนัขได้ยินชัดเจนและรู้สึกรำคาญจนต้องลุกออกจากใต้ท้องรถโดยไม่ส่งเสียงดังรบกวนเพื่อนบ้าน',
+    usageTipTh: 'เหมาะสำหรับปลุกสุนัขที่นอนหลบแดดอยู่กึ่งกลางใต้ท้องรถหรือข้างล้อ'
+  },
+  'dog-shaker-interrupter': {
+    id: 'dog-shaker-interrupter',
+    species: 'dog',
+    category: 'deter',
+    nameTh: 'เสียงกระป๋องเขย่าเหรียญครูฝึกสุนัข (Trainer Shaker Can)',
+    nameEn: '4.0–14.0 kHz High-Crest Acoustic Interrupter',
+    freqLabel: '4,000 – 14,000 Hz',
+    primaryHz: 7600,
+    bandMin: 4000,
+    bandMax: 14000,
+    pinnaeGainDb: '+14 dB',
+    targetZone: 'undercarriage',
+    effectiveness: 96,
+    mechanismTh: 'ต้นแบบจากอุปกรณ์หยุดพฤติกรรมสุนัข (Pet Convincer / Shaker Can) สร้างหัวคลื่นโลหะกระทบกันตรงจุดพีคการได้ยินของสุนัข (4–8 kHz) ทำให้สุนัขที่หลับลึกสะดุ้งตื่นและเดินออกจากใต้รถทันที',
+    usageTipTh: 'ได้ผลดีที่สุดสำหรับปลุกสุนัขจรหรือสุนัขบ้านที่นอนหลับลึกใต้ท้องรถและไม่ยอมลุก'
+  },
+  'dog-sonar-ping': {
+    id: 'dog-sonar-ping',
+    species: 'dog',
+    category: 'deter',
+    nameTh: 'คลื่นโซนาร์พัลส์จุดพีคหูสุนัข (Canine Peak-Hearing Ping)',
+    nameEn: '4.2–7.8 kHz Rapid Staccato Acoustic Ping',
+    freqLabel: '4,200 – 7,800 Hz',
+    primaryHz: 5800,
+    bandMin: 4200,
+    bandMax: 7800,
+    pinnaeGainDb: '+15 dB',
+    targetZone: 'rear-exhaust',
+    effectiveness: 92,
+    mechanismTh: 'ส่งพัลส์คลื่นความถี่ 4.2–7.8 kHz ซึ่งเป็นจุดที่โสตประสาทสุนัขไวที่สุดตามธรรมชาติ ตัดจังหวะรัวสั้นๆ เพื่อเคลียร์จุดบอดหลังล้อรถก่อนถอยหลัง',
+    usageTipTh: 'ใช้ส่งสัญญาณเตือนสุนัขที่นอนขวางอยู่ด้านหลังรถ (จุดบอดกล้องมองหลัง)'
+  },
+  'dog-airhorn-burst': {
+    id: 'dog-airhorn-burst',
+    species: 'dog',
+    category: 'deter',
+    nameTh: 'เสียงแตรลมเตือนภัยความถี่ต่ำ-กลาง (Startle Horn Pulse)',
+    nameEn: '280–1,850 Hz Dual-Chord Brass Horn Transient',
+    freqLabel: '280 – 1,850 Hz',
+    primaryHz: 540,
+    bandMin: 280,
+    bandMax: 1850,
+    pinnaeGainDb: '+11 dB',
+    targetZone: 'rear-exhaust',
+    effectiveness: 93,
+    mechanismTh: 'จำลองเสียงแตรลมฉุกเฉินแบบไล่ระดับความดัง (Soft-Start Brass Transient) เพื่อเตือนสุนัขตัวใหญ่หรือสุนัขสูงวัยที่เริ่มหูตึงในย่านความถี่สูงให้ถอยห่างจากตัวรถ',
+    usageTipTh: 'เหมาะสำหรับสุนัขโตหรือสุนัขสูงวัยที่ไม่ตอบสนองต่อคลื่นความถี่สูง'
+  },
+  'dog-feline-warning': {
+    id: 'dog-feline-warning',
+    species: 'dog',
+    category: 'deter',
+    nameTh: 'เสียงขู่ฟ่อป้องกันสุนัขคุ้ยซุ้มล้อ (Wheel-Well Deterrent Hiss)',
+    nameEn: '3.5–11.5 kHz Sharp Defensive Sibilance',
+    freqLabel: '3,500 – 11,500 Hz',
+    primaryHz: 6800,
+    bandMin: 3500,
+    bandMax: 11500,
+    pinnaeGainDb: '+12 dB',
+    targetZone: 'wheel-wells',
+    effectiveness: 88,
+    mechanismTh: 'เสียงพ่นลมขู่ฟ่อความถี่สูงทำให้สุนัขระแวงว่าจะถูกกงเล็บข่วนที่จมูก ช่วยหยุดพฤติกรรมสุนัขที่กำลังมุดคุ้ยซุ้มล้อหรือกัดสายไฟเซ็นเซอร์ใต้กันชน',
+    usageTipTh: 'ใช้เมื่อสุนัขกำลังมุดดมกลิ่นหรือคุ้ยบริเวณซุ้มล้อหน้าและใต้กันชน'
+  },
+  'dog-chassis-thump': {
+    id: 'dog-chassis-thump',
+    species: 'dog',
+    category: 'deter',
+    nameTh: 'เสียงเคาะตัวถังปลุกสุนัขหลับลึก (Chassis Wake Thump)',
+    nameEn: '65–320 Hz Sub-Resonant Thump + Vibration',
+    freqLabel: '65 – 320 Hz + สั่น',
+    primaryHz: 145,
+    bandMin: 65,
+    bandMax: 320,
+    pinnaeGainDb: '+8 dB',
+    targetZone: 'engine-bay',
+    effectiveness: 87,
+    mechanismTh: 'คลื่นกระแทกความถี่ต่ำพร้อมแรงสั่นสะเทือน ช่วยส่งสัญญาณเตือนสุนัขที่นอนพิงยางรถยนต์หรือใต้กันชนหน้าให้รู้ตัวว่ากำลังจะมีการขยับรถ',
+    usageTipTh: 'ใช้เป็นจังหวะแรกก่อนปล่อยคลื่นนกหวีดสุนัขเพื่อไม่ให้สุนัขตกใจกระทันหัน'
+  },
+
+  // === DOG COAX / CALL PROFILES (โหมดเรียกสุนัขให้ออกมาจากใต้รถอย่างเป็นมิตร) ===
+  'dog-squeaky-toy': {
+    id: 'dog-squeaky-toy',
+    species: 'dog',
+    category: 'coax',
+    nameTh: 'เสียงตุ๊กตาบีบปี๊บดึงดูดสุนัข (Squeaky Toy Lure)',
+    nameEn: '2.2–5.4 kHz Dual-Reed Squeaker Contour',
+    freqLabel: '2,200 – 5,400 Hz',
+    primaryHz: 3400,
+    bandMin: 2200,
+    bandMax: 5400,
+    pinnaeGainDb: '+14 dB',
+    targetZone: 'undercarriage',
+    effectiveness: 96,
+    mechanismTh: 'สังเคราะห์เสียงลิ้นลมของเล่นสุนัขจังหวะบีบ-คลาย (2.2–5.4 kHz) กระตุ้นความตื่นเต้นและอยากรู้อยากเห็น ทำให้สุนัขรีบคลานออกจากใต้ท้องรถมาหาต้นเสียงทันที',
+    usageTipTh: 'ได้ผลดีเยี่ยมในการล่อสุนัขบ้านหรือสุนัขขี้กลัวที่ไม่ยอมขยับออกจากใต้ท้องรถ'
+  },
+  'dog-recall-whistle': {
+    id: 'dog-recall-whistle',
+    species: 'dog',
+    category: 'coax',
+    nameTh: 'เสียงผิวปากเรียกสุนัขเป็นมิตร (Friendly Recall Whistle)',
+    nameEn: '1.4–3.2 kHz Upward Two-Note Whistle',
+    freqLabel: '1,400 – 3,200 Hz',
+    primaryHz: 2350,
+    bandMin: 1400,
+    bandMax: 3200,
+    pinnaeGainDb: '+12 dB',
+    targetZone: 'rear-exhaust',
+    effectiveness: 92,
+    mechanismTh: 'คลื่นเสียงผิวปากตวัดขึ้น 2 พยางค์ (Upward Pitch Glissando) ซึ่งสุนัขทั่วโลกจดจำว่าเป็นสัญญาณเรียกด้วยความเป็นมิตรจากมนุษย์',
+    usageTipTh: 'ยืนห่างจากตัวรถ 2 เมตรแล้วเปิดเสียงนี้เพื่อเรียกให้สุนัขเดินตามออกมาพ้นแนวล้อรถ'
+  },
+  'dog-bowl-kibble': {
+    id: 'dog-bowl-kibble',
+    species: 'dog',
+    category: 'coax',
+    nameTh: 'เสียงเคาะชามสแตนเลสและเทอาหารเม็ด (Bowl Clink & Kibble)',
+    nameEn: '1.6–8.8 kHz Metallic Bowl Ring & Pellet Cascade',
+    freqLabel: '1,600 – 8,800 Hz',
+    primaryHz: 4200,
+    bandMin: 1600,
+    bandMax: 8800,
+    pinnaeGainDb: '+13 dB',
+    targetZone: 'undercarriage',
+    effectiveness: 94,
+    mechanismTh: 'จำลองเสียงชามข้าวสแตนเลสกระทบพื้นตามด้วยเสียงอาหารเม็ดร่วงกราว กระตุ้นการตอบสนองแบบ Pavlovian ให้สุนัขลุกออกจากใต้รถทันที',
+    usageTipTh: 'เหมาะมากสำหรับสุนัขจรที่นอนหลบแดดใต้รถและดื้อไม่ยอมลุกเมื่อถูกไล่'
+  },
+  'dog-puppy-whine': {
+    id: 'dog-puppy-whine',
+    species: 'dog',
+    category: 'coax',
+    nameTh: 'เสียงลูกสุนัขครางเรียกแม่ (Puppy Contact Whimper)',
+    nameEn: '680–2,100 Hz Harmonic Canine Contact Call',
+    freqLabel: '680 – 2,100 Hz',
+    primaryHz: 1180,
+    bandMin: 680,
+    bandMax: 2100,
+    pinnaeGainDb: '+11 dB',
+    targetZone: 'wheel-wells',
+    effectiveness: 90,
+    mechanismTh: 'เสียงร้องหงิงๆ ความถี่อ่อนโยน (680–2,100 Hz) ช่วยล่อลูกสุนัขที่หลงเข้าไปซุกในซุ้มล้อหรือใต้กันชนหน้าให้เดินออกมาหาต้นเสียงอย่างปลอดภัย',
+    usageTipTh: 'ใช้เมื่อพบลูกสุนัขตัวเล็กแอบซุกในซุ้มล้อหรือใต้ท้องรถแล้วกลัวไม่กล้าออกมา'
   }
 };
 
@@ -197,6 +362,41 @@ export const SMART_SWEEP_STAGES = [
     profileId: 'metallic-shaker',
     titleTh: 'ระยะที่ 4/4: เสียงโลหะกระทบฉับพลัน (Final Perimeter Flush)',
     descTh: 'สร้างหัวคลื่นแหลมคม 4–15 kHz สลับจังหวะสุ่ม เพื่อเคลียร์ซุ้มล้อและใต้ท้องรถขั้นสุดท้าย'
+  }
+];
+
+export const DOG_SMART_SWEEP_STAGES = [
+  {
+    stage: 1,
+    startSec: 0,
+    endSec: 4,
+    profileId: 'dog-chassis-thump',
+    titleTh: 'ระยะที่ 1/4: เคาะตัวถังปลุกสุนัขหลับลึก (Chassis Wake Thump)',
+    descTh: 'ส่งคลื่นทุ้มต่ำ 65–320 Hz พร้อมสั่นเตือน ให้สุนัขที่นอนพิงล้อหรือใต้ท้องรถรู้สึกตัวก่อน'
+  },
+  {
+    stage: 2,
+    startSec: 4,
+    endSec: 10,
+    profileId: 'dog-whistle-sweep',
+    titleTh: 'ระยะที่ 2/4: คลื่นนกหวีดสุนัข 12.0–18.5 kHz (Dog Whistle Sweep)',
+    descTh: 'กวาดคลื่นความถี่นกหวีดฝึกสุนัข กระตุ้นให้สุนัขตื่นตัวและลุกออกจากเงาใต้ท้องรถ'
+  },
+  {
+    stage: 3,
+    startSec: 10,
+    endSec: 15,
+    profileId: 'dog-shaker-interrupter',
+    titleTh: 'ระยะที่ 3/4: เสียงกระป๋องเขย่าเหรียญครูฝึก (Trainer Shaker Can)',
+    descTh: 'สร้างหัวคลื่นโลหะ 4–14 kHz ตรงจุดพีคหูสุนัขเพื่อตัดพฤติกรรมการนอนขวางทางรถ'
+  },
+  {
+    stage: 4,
+    startSec: 15,
+    endSec: 20,
+    profileId: 'dog-sonar-ping',
+    titleTh: 'ระยะที่ 4/4: คลื่นโซนาร์พัลส์เคลียร์ท้ายรถ (Canine Peak Ping)',
+    descTh: 'ส่งพัลส์ความถี่ 4.2–7.8 kHz เคลียร์จุดบอดหลังล้อรถและใต้กันชนท้ายขั้นสุดท้าย'
   }
 ];
 
@@ -355,6 +555,36 @@ export class CattyAcousticEngine {
       case 'friendly-trill':
         this._runFriendlyTrill();
         break;
+      case 'dog-whistle-sweep':
+        this._runDogWhistleSweep();
+        break;
+      case 'dog-shaker-interrupter':
+        this._runMetallicShaker('dog-shaker-interrupter', 'Trainer Shaker Can 4–14 kHz');
+        break;
+      case 'dog-sonar-ping':
+        this._runDogSonarPing();
+        break;
+      case 'dog-airhorn-burst':
+        this._runDogAirhornBurst();
+        break;
+      case 'dog-feline-warning':
+        this._runFelineHiss('dog-feline-warning', 'Defensive Hiss 3.5–11.5 kHz');
+        break;
+      case 'dog-chassis-thump':
+        this._runNekoBanBanKnock('dog-chassis-thump', 'Chassis Thump 65–320 Hz + Haptic');
+        break;
+      case 'dog-squeaky-toy':
+        this._runDogSqueakyToy();
+        break;
+      case 'dog-recall-whistle':
+        this._runDogRecallWhistle();
+        break;
+      case 'dog-bowl-kibble':
+        this._runFoodCanKibble('dog-bowl-kibble', 'Stainless Bowl Ring + Kibble');
+        break;
+      case 'dog-puppy-whine':
+        this._runDogPuppyWhine();
+        break;
       case 'manual-lab':
         this._runManualLab();
         break;
@@ -367,12 +597,13 @@ export class CattyAcousticEngine {
     }
   }
 
-  startSmartSweep(onProgress, onComplete) {
+  startSmartSweep(onProgress, onComplete, species = 'cat') {
     this.initContext();
     this.stopAll();
     this.isSmartSweeping = true;
     this.isPlaying = true;
     this.sweepStartTime = performance.now();
+    const stages = species === 'dog' ? DOG_SMART_SWEEP_STAGES : SMART_SWEEP_STAGES;
     let currentStageIdx = -1;
 
     const tick = () => {
@@ -384,12 +615,12 @@ export class CattyAcousticEngine {
         return;
       }
 
-      const stageIdx = SMART_SWEEP_STAGES.findIndex(
+      const stageIdx = stages.findIndex(
         (s) => elapsedSec >= s.startSec && elapsedSec < s.endSec
       );
       if (stageIdx !== -1 && stageIdx !== currentStageIdx) {
         currentStageIdx = stageIdx;
-        const stageObj = SMART_SWEEP_STAGES[stageIdx];
+        const stageObj = stages[stageIdx];
         this.playProfile(stageObj.profileId);
         this.isSmartSweeping = true;
       }
@@ -399,7 +630,7 @@ export class CattyAcousticEngine {
           elapsedSec,
           totalSec: this.sweepDurationSec,
           percent: Math.min(100, (elapsedSec / this.sweepDurationSec) * 100),
-          stage: SMART_SWEEP_STAGES[currentStageIdx] || SMART_SWEEP_STAGES[0],
+          stage: stages[currentStageIdx] || stages[0],
           instantHz: Math.round(this.currentInstantHz)
         });
       }
@@ -473,12 +704,12 @@ export class CattyAcousticEngine {
     modulate();
   }
 
-  _runFelineHiss() {
-    this.currentModulationLabel = 'Sibilant Hiss 3.5–11.5 kHz Burst';
+  _runFelineHiss(targetProfileId = 'feline-hiss', label = 'Sibilant Hiss 3.5–11.5 kHz Burst') {
+    this.currentModulationLabel = label;
     const noiseBuffer = this._createNoiseBuffer(2.0);
 
     const triggerHissBurst = () => {
-      if (!this.isPlaying || this.activeProfileId !== 'feline-hiss') return;
+      if (!this.isPlaying || this.activeProfileId !== targetProfileId) return;
       const now = this.ctx.currentTime;
 
       const source = this.ctx.createBufferSource();
@@ -521,12 +752,12 @@ export class CattyAcousticEngine {
     triggerHissBurst();
   }
 
-  _runMetallicShaker() {
-    this.currentModulationLabel = 'Stochastic Metallic Transients 4–15 kHz';
+  _runMetallicShaker(targetProfileId = 'metallic-shaker', label = 'Stochastic Metallic Transients 4–15 kHz') {
+    this.currentModulationLabel = label;
     const noiseBuffer = this._createNoiseBuffer(0.3);
 
     const triggerHit = () => {
-      if (!this.isPlaying || this.activeProfileId !== 'metallic-shaker') return;
+      if (!this.isPlaying || this.activeProfileId !== targetProfileId) return;
       const now = this.ctx.currentTime;
 
       // Metallic inharmonic ring oscillators + noise burst
@@ -692,11 +923,11 @@ export class CattyAcousticEngine {
     step();
   }
 
-  _runNekoBanBanKnock() {
-    this.currentModulationLabel = 'Neko Ban Ban Hood Knock 75–380 Hz + Haptic';
+  _runNekoBanBanKnock(targetProfileId = 'neko-banban-knock', label = 'Neko Ban Ban Hood Knock 75–380 Hz + Haptic') {
+    this.currentModulationLabel = label;
 
     const triggerKnockPair = () => {
-      if (!this.isPlaying || this.activeProfileId !== 'neko-banban-knock') return;
+      if (!this.isPlaying || this.activeProfileId !== targetProfileId) return;
       const now = this.ctx.currentTime;
 
       // Double knock ("Ban-Ban!")
@@ -802,11 +1033,11 @@ export class CattyAcousticEngine {
     triggerMeow();
   }
 
-  _runFoodCanKibble() {
-    this.currentModulationLabel = 'Can Pull-Tab Pop + Kibble Cascade';
+  _runFoodCanKibble(targetProfileId = 'food-can-kibble', label = 'Can Pull-Tab Pop + Kibble Cascade') {
+    this.currentModulationLabel = label;
 
     const triggerCanAndKibble = () => {
-      if (!this.isPlaying || this.activeProfileId !== 'food-can-kibble') return;
+      if (!this.isPlaying || this.activeProfileId !== targetProfileId) return;
       const now = this.ctx.currentTime;
 
       // 1. Metallic pull-tab click + lid pop
@@ -938,6 +1169,208 @@ export class CattyAcousticEngine {
       this.loopTimer = setTimeout(triggerTrill, 1200);
     };
     triggerTrill();
+  }
+
+  // =========================================================================
+  // DOG MODE SYNTHESIS ROUTINES
+  // =========================================================================
+
+  _runDogWhistleSweep() {
+    this.currentModulationLabel = 'Galton Dog Whistle 12.0–18.5 kHz';
+    const osc = this.ctx.createOscillator();
+    const env = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.value = 14200;
+    env.gain.value = 0.65;
+
+    osc.connect(env);
+    env.connect(this.masterGain);
+    osc.start();
+    this.activeNodes.push(osc, env);
+
+    const stepWhistle = () => {
+      if (!this.isPlaying || this.activeProfileId !== 'dog-whistle-sweep') return;
+      const now = this.ctx.currentTime;
+      const nextHz = 12000 + Math.random() * 6500; // 12.0 - 18.5 kHz
+      const dur = 0.18 + Math.random() * 0.25;
+      osc.frequency.exponentialRampToValueAtTime(nextHz, now + dur);
+      env.gain.setTargetAtTime(Math.random() > 0.18 ? 0.72 : 0.12, now, 0.025);
+
+      this.currentInstantHz = nextHz;
+      if (this.onStateChange) this.onStateChange(this.getStatus());
+      this.loopTimer = setTimeout(stepWhistle, dur * 1000);
+    };
+    stepWhistle();
+  }
+
+  _runDogSonarPing() {
+    this.currentModulationLabel = 'Canine Peak Ping 4.2–7.8 kHz';
+
+    const triggerPing = () => {
+      if (!this.isPlaying || this.activeProfileId !== 'dog-sonar-ping') return;
+      const now = this.ctx.currentTime;
+
+      const osc = this.ctx.createOscillator();
+      const env = this.ctx.createGain();
+      osc.type = 'triangle';
+      const targetHz = 4400 + Math.random() * 3200;
+      osc.frequency.setValueAtTime(targetHz, now);
+      osc.frequency.exponentialRampToValueAtTime(targetHz * 1.18, now + 0.09);
+
+      env.gain.setValueAtTime(0.001, now);
+      env.gain.linearRampToValueAtTime(0.8, now + 0.008);
+      env.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+      osc.connect(env);
+      env.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.15);
+      this.activeNodes.push(osc, env);
+
+      this.currentInstantHz = targetHz;
+      if (this.onStateChange) this.onStateChange(this.getStatus());
+      this.loopTimer = setTimeout(triggerPing, 240);
+    };
+    triggerPing();
+  }
+
+  _runDogAirhornBurst() {
+    this.currentModulationLabel = 'Brass Air-Horn 280–1,850 Hz';
+
+    const triggerHorn = () => {
+      if (!this.isPlaying || this.activeProfileId !== 'dog-airhorn-burst') return;
+      const now = this.ctx.currentTime;
+
+      const freqs = [310, 392, 620];
+      freqs.forEach((f, idx) => {
+        const osc = this.ctx.createOscillator();
+        const env = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(f, now);
+
+        env.gain.setValueAtTime(0.001, now);
+        env.gain.linearRampToValueAtTime(0.28 / (idx + 1), now + 0.03);
+        env.gain.setValueAtTime(0.26 / (idx + 1), now + 0.36);
+        env.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+
+        osc.connect(env);
+        env.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.5);
+        this.activeNodes.push(osc, env);
+      });
+
+      this.currentInstantHz = 540;
+      if (this.onStateChange) this.onStateChange(this.getStatus());
+      this.loopTimer = setTimeout(triggerHorn, 920);
+    };
+    triggerHorn();
+  }
+
+  _runDogSqueakyToy() {
+    this.currentModulationLabel = 'Squeaky Toy Double-Reed 2.2–5.4 kHz';
+
+    const triggerSqueak = () => {
+      if (!this.isPlaying || this.activeProfileId !== 'dog-squeaky-toy') return;
+      const now = this.ctx.currentTime;
+
+      // Press + release double squeak
+      [
+        { offset: 0, startHz: 2600, endHz: 4800, dur: 0.16 },
+        { offset: 0.2, startHz: 4400, endHz: 2300, dur: 0.22 }
+      ].forEach((s) => {
+        const osc = this.ctx.createOscillator();
+        const env = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(s.startHz, now + s.offset);
+        osc.frequency.exponentialRampToValueAtTime(s.endHz, now + s.offset + s.dur);
+
+        env.gain.setValueAtTime(0.001, now + s.offset);
+        env.gain.linearRampToValueAtTime(0.7, now + s.offset + 0.02);
+        env.gain.exponentialRampToValueAtTime(0.001, now + s.offset + s.dur + 0.02);
+
+        osc.connect(env);
+        env.connect(this.masterGain);
+        osc.start(now + s.offset);
+        osc.stop(now + s.offset + s.dur + 0.03);
+        this.activeNodes.push(osc, env);
+      });
+
+      this.currentInstantHz = 3600;
+      if (this.onStateChange) this.onStateChange(this.getStatus());
+      this.loopTimer = setTimeout(triggerSqueak, 950);
+    };
+    triggerSqueak();
+  }
+
+  _runDogRecallWhistle() {
+    this.currentModulationLabel = 'Upward Recall Whistle 1.4–3.2 kHz';
+
+    const triggerWhistle = () => {
+      if (!this.isPlaying || this.activeProfileId !== 'dog-recall-whistle') return;
+      const now = this.ctx.currentTime;
+
+      const osc = this.ctx.createOscillator();
+      const env = this.ctx.createGain();
+      osc.type = 'sine';
+
+      // Two-note upward recall contour ("Whee-whooit!")
+      osc.frequency.setValueAtTime(1480, now);
+      osc.frequency.exponentialRampToValueAtTime(1920, now + 0.16);
+      osc.frequency.setValueAtTime(1650, now + 0.22);
+      osc.frequency.exponentialRampToValueAtTime(3100, now + 0.52);
+
+      env.gain.setValueAtTime(0.001, now);
+      env.gain.linearRampToValueAtTime(0.65, now + 0.03);
+      env.gain.setValueAtTime(0.05, now + 0.18);
+      env.gain.linearRampToValueAtTime(0.75, now + 0.25);
+      env.gain.exponentialRampToValueAtTime(0.001, now + 0.56);
+
+      osc.connect(env);
+      env.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.58);
+      this.activeNodes.push(osc, env);
+
+      this.currentInstantHz = 2850;
+      if (this.onStateChange) this.onStateChange(this.getStatus());
+      this.loopTimer = setTimeout(triggerWhistle, 1250);
+    };
+    triggerWhistle();
+  }
+
+  _runDogPuppyWhine() {
+    this.currentModulationLabel = 'Puppy Contact Whimper 680–2,100 Hz';
+
+    const triggerWhine = () => {
+      if (!this.isPlaying || this.activeProfileId !== 'dog-puppy-whine') return;
+      const now = this.ctx.currentTime;
+
+      const osc = this.ctx.createOscillator();
+      const env = this.ctx.createGain();
+      osc.type = 'sine';
+
+      const startHz = 1650 + Math.random() * 250;
+      osc.frequency.setValueAtTime(startHz, now);
+      osc.frequency.exponentialRampToValueAtTime(1980, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(760, now + 0.42);
+
+      env.gain.setValueAtTime(0.001, now);
+      env.gain.linearRampToValueAtTime(0.6, now + 0.03);
+      env.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+      osc.connect(env);
+      env.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.46);
+      this.activeNodes.push(osc, env);
+
+      this.currentInstantHz = 1280;
+      if (this.onStateChange) this.onStateChange(this.getStatus());
+      this.loopTimer = setTimeout(triggerWhine, 980);
+    };
+    triggerWhine();
   }
 
   // =========================================================================

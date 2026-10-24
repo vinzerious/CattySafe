@@ -306,6 +306,50 @@ input[type="checkbox"][switch]:focus-visible {
   gap: 0.75rem;
 }
 
+/* Species Mode Toggle Group (Cat Mode vs Dog Mode) */
+.species-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-control);
+  background-color: var(--bg-recessed);
+  padding: 2px;
+  gap: 2px;
+}
+
+.species-toggle-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.36rem 0.75rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+.species-toggle-btn:hover {
+  color: var(--ink-primary);
+  background-color: var(--bg-subtle-tint);
+}
+
+.species-toggle-btn[aria-pressed="true"] {
+  background-color: var(--deter-primary);
+  color: var(--deter-on);
+  border-color: var(--deter-primary);
+}
+
+.sound-trigger-row[hidden] {
+  display: none !important;
+}
+
 /* Live Status Telemetry Pill */
 .telemetry-pill {
   display: inline-flex;

@@ -2,7 +2,7 @@
  * CattySafe — Main Application Controller & Interactive Canvas Telemetry
  */
 
-import { CattyAcousticEngine, SOUND_PROFILES, SMART_SWEEP_STAGES } from './audio-engine.js';
+import { CattyAcousticEngine, SOUND_PROFILES, SMART_SWEEP_STAGES, DOG_SMART_SWEEP_STAGES } from './audio-engine.js';
 
 export const VEHICLE_ZONES = {
   'engine-bay': {
@@ -55,12 +55,65 @@ export const VEHICLE_ZONES = {
   }
 };
 
+export const DOG_VEHICLE_ZONES = {
+  'engine-bay': {
+    id: 'engine-bay',
+    code: 'ZONE A',
+    nameTh: 'ใต้กันชนหน้าและแผ่นปิดใต้ห้องเครื่อง',
+    nameEn: 'Front Bumper & Lower Splash Guard',
+    riskPercent: 'ความเสี่ยง 18%',
+    whyTh: 'ลูกสุนัขมักมุดเข้ามาซุกใต้กันชนหน้าเพื่อหาไออุ่น หรือสุนัขโตอาจมุดมากัดสายไฟ ABS และท่อยางใต้ห้องเครื่อง',
+    cautionTh: 'ใช้เสียงเคาะตัวถังปลุกสุนัข (65–320 Hz) หรือเปิดโหมดเสียงล่อ (ตุ๊กตาบีบปี๊บ) เพื่อเรียกลูกสุนัขให้ออกมาทางด้านหน้ารถ',
+    recommendedProfile: 'dog-chassis-thump',
+    secondaryProfile: 'dog-squeaky-toy',
+    buttonLabelTh: 'ส่งเสียงเคาะตัวถังปลุกสุนัขหน้ากันชน (65–320 Hz)'
+  },
+  'wheel-wells': {
+    id: 'wheel-wells',
+    code: 'ZONE B',
+    nameTh: 'ซุ้มล้อหน้าและข้างแก้มยางรถยนต์',
+    nameEn: 'Front Tires & Wheel Wells',
+    riskPercent: 'ความเสี่ยง 24%',
+    whyTh: 'สุนัขชอบนอนเอาหลังพิงแก้มยางล้อหน้าเพราะบังแดดและเย็นสบาย ซึ่งคนขับมักมองไม่เห็นหากขึ้นรถจากฝั่งตรงข้าม',
+    cautionTh: 'ใช้เสียงโซนาร์พัลส์ความถี่จุดพีคหูสุนัข (4.2–7.8 kHz) หรือเสียงแมวขู่ป้องกันตัวเพื่อให้สุนัขลุกเดินออกห่างจากล้อหน้า',
+    recommendedProfile: 'dog-sonar-ping',
+    secondaryProfile: 'dog-feline-warning',
+    buttonLabelTh: 'ส่งโซนาร์พัลส์เคลียร์ข้างล้อหน้า (4.2–7.8 kHz)'
+  },
+  'undercarriage': {
+    id: 'undercarriage',
+    code: 'ZONE C',
+    nameTh: 'กึ่งกลางใต้ท้องรถ (จุดสุนัขหลบแดดอันดับ 1)',
+    nameEn: 'Center Undercarriage Shade',
+    riskPercent: 'ความเสี่ยงสูงสุด 36%',
+    whyTh: 'พื้นปูนหรือดินใต้ท้องรถเป็นจุดที่เย็นที่สุดในตอนกลางวัน สุนัขจรและสุนัขบ้านมักนอนหลับลึกอยู่กึ่งกลางใต้ท้องรถ',
+    cautionTh: 'ส่งคลื่นนกหวีดสุนัขความถี่สูง (12–18.5 kHz) หรือเสียงกระป๋องลมอัด Pet Corrector เพื่อปลุกและไล่สุนัขออกจากใต้ท้องรถ',
+    recommendedProfile: 'dog-whistle-sweep',
+    secondaryProfile: 'dog-shaker-interrupter',
+    buttonLabelTh: 'ส่งคลื่นนกหวีดสุนัขไล่ใต้ท้องรถ (12.0–18.5 kHz)'
+  },
+  'rear-exhaust': {
+    id: 'rear-exhaust',
+    code: 'ZONE D',
+    nameTh: 'คานล้อหลังและจุดบอดขณะถอยรถ',
+    nameEn: 'Rear Axle & Reverse Blind Spot',
+    riskPercent: 'ความเสี่ยงสูง 22%',
+    whyTh: 'สุนัขที่นอนอยู่หลังล้อหลังอยู่ในจุดบอดกระจกมองหลัง 100% เสี่ยงต่อการถูกล้อทับทันทีที่คนขับเข้าเกียร์ถอยหลัง (R)',
+    cautionTh: 'ส่งเสียงแตรลมเตือนภัยฉุกเฉิน (280–1,850 Hz) หรือเสียงเขย่าโลหะเพื่อให้สุนัขรีบลุกออกจากท้ายรถทันทีก่อนถอย',
+    recommendedProfile: 'dog-airhorn-burst',
+    secondaryProfile: 'dog-shaker-interrupter',
+    buttonLabelTh: 'ส่งเสียงแตรลมเตือนภัยเคลียร์ท้ายรถ (280–1,850 Hz)'
+  }
+};
+
 const STORAGE_KEY_CLEARED = 'cattysafe_cleared_zones_v1';
 const STORAGE_KEY_THEME = 'cattysafe_theme_v1';
+const STORAGE_KEY_SPECIES = 'cattysafe_species_v1';
 
 class CattySafeApp {
   constructor() {
     this.engine = new CattyAcousticEngine();
+    this.species = this.loadSpecies(); // 'cat' | 'dog'
     this.selectedZoneId = 'engine-bay';
     this.clearedZones = this.loadClearedZones();
     this.canvasMode = 'audiogram'; // 'audiogram' | 'waveform'
@@ -78,6 +131,25 @@ class CattySafeApp {
     this.micAnalyser = null;
 
     this.init();
+  }
+
+  loadSpecies() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SPECIES);
+      return saved === 'dog' ? 'dog' : 'cat';
+    } catch (_) {
+      return 'cat';
+    }
+  }
+
+  saveSpecies() {
+    try {
+      localStorage.setItem(STORAGE_KEY_SPECIES, this.species);
+    } catch (_) {}
+  }
+
+  getActiveZoneMap() {
+    return this.species === 'dog' ? DOG_VEHICLE_ZONES : VEHICLE_ZONES;
   }
 
   loadClearedZones() {
@@ -98,6 +170,7 @@ class CattySafeApp {
 
   init() {
     this.initTheme();
+    this.bindSpeciesToggle();
     this.bindTopControls();
     this.bindSmartSweepControls();
     this.bindModeTabs();
@@ -109,6 +182,7 @@ class CattySafeApp {
     this.bindTorchDialog();
 
     this.engine.onStateChange = (status) => this.renderAudioStatus(status);
+    this.applySpeciesUI();
     this.renderZoneInspector();
     this.renderAudioStatus(this.engine.getStatus());
     this.startCanvasLoop();
@@ -116,6 +190,141 @@ class CattySafeApp {
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
+  }
+
+  bindSpeciesToggle() {
+    const btns = document.querySelectorAll('.species-toggle-btn[data-species]');
+    btns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const nextSpecies = btn.getAttribute('data-species') === 'dog' ? 'dog' : 'cat';
+        if (nextSpecies !== this.species) {
+          this.setSpecies(nextSpecies);
+        }
+      });
+    });
+  }
+
+  setSpecies(species) {
+    this.species = species === 'dog' ? 'dog' : 'cat';
+    this.saveSpecies();
+    if (this.engine.isPlaying) {
+      this.engine.stopAll();
+    }
+    // Select the highest-risk default zone for the target species
+    this.selectedZoneId = this.species === 'dog' ? 'undercarriage' : 'engine-bay';
+    this.applySpeciesUI();
+    this.resetSweepUI(false);
+    this.renderZoneInspector();
+    this.renderAudioStatus(this.engine.getStatus());
+  }
+
+  applySpeciesUI() {
+    const isDog = this.species === 'dog';
+    document.documentElement.setAttribute('data-species', this.species);
+
+    // Update toggle buttons aria-pressed
+    document.querySelectorAll('.species-toggle-btn[data-species]').forEach((btn) => {
+      const sp = btn.getAttribute('data-species');
+      btn.setAttribute('aria-pressed', sp === this.species ? 'true' : 'false');
+    });
+
+    // Show/hide species-specific sound profile cards
+    document.querySelectorAll('[data-species-card]').forEach((card) => {
+      const cardSp = card.getAttribute('data-species-card');
+      if (cardSp === this.species) {
+        card.removeAttribute('hidden');
+      } else {
+        card.setAttribute('hidden', '');
+      }
+    });
+
+    // Update Sweep Console header & lead
+    const sweepHeading = document.getElementById('sweep-console-heading');
+    const sweepLead = document.getElementById('sweep-lead-text');
+    const ch1 = document.getElementById('stage-chip-label-1');
+    const ch2 = document.getElementById('stage-chip-label-2');
+    const ch3 = document.getElementById('stage-chip-label-3');
+    const ch4 = document.getElementById('stage-chip-label-4');
+
+    if (sweepHeading) {
+      sweepHeading.textContent = isDog
+        ? 'ระบบสแกนเสียงไล่สุนัขรอบคันรถอัตโนมัติ (Canine 4-Stage Sweep)'
+        : 'ระบบสแกนเสียงไล่แมวรอบคันรถอัตโนมัติ (Neko Ban Ban 4-Stage Sweep)';
+    }
+    if (sweepLead) {
+      sweepLead.textContent = isDog
+        ? 'ปลุกสุนัขที่นอนหลับใต้ท้องรถหรือพิงยางล้อ → ส่งคลื่นนกหวีดสุนัขความถี่สูง 12–18.5 kHz → โซนาร์พัลส์ 4–8 kHz → เสียงกระป๋องลมอัดเตือนภัย'
+        : 'ปลุกแมวที่หลับในห้องเครื่อง → ส่งคลื่นกวาดความถี่สูง 13.5–19.5 kHz → เสียงแมวเจ้าถิ่นขู่ฟ่อ → เสียงเขย่าโลหะเคลียร์ซุ้มล้อและใต้ท้องรถ';
+    }
+    if (ch1) ch1.textContent = isDog ? 'เคาะปลุกสุนัข' : 'เคาะปลุก';
+    if (ch2) ch2.textContent = isDog ? 'นกหวีด 12–18.5k' : 'กวาด 13.5–19.5k';
+    if (ch3) ch3.textContent = isDog ? 'โซนาร์ 4.2–7.8k' : 'เสียงขู่ฟ่อ';
+    if (ch4) ch4.textContent = isDog ? 'กระป๋องลมอัด' : 'เขย่าโลหะ';
+
+    // Update Audiogram legend
+    const audSpeciesLegend = document.getElementById('audiogram-species-legend');
+    const audBandLegend = document.getElementById('audiogram-band-legend');
+    if (audSpeciesLegend) {
+      audSpeciesLegend.textContent = isDog
+        ? 'ความไวหูสุนัข (67 Hz – 45 kHz · พีค 4–8 kHz)'
+        : 'ความไวหูแมว (45 Hz – 64 kHz)';
+    }
+    if (audBandLegend) {
+      audBandLegend.textContent = isDog
+        ? 'ช่วงนกหวีดสุนัขจากลำโพงมือถือ (12.0–18.5 kHz)'
+        : 'ช่วงส่งคลื่นไล่แมวสูงสุดจากลำโพงมือถือ (13.5–19.5 kHz)';
+    }
+
+    // Update Mode Tabs & Context Banners
+    const tabDeterLabel = document.getElementById('tab-deter-label');
+    const tabCoaxLabel = document.getElementById('tab-coax-label');
+    const deterBanner = document.getElementById('deter-context-banner-text');
+    const coaxBanner = document.getElementById('coax-context-banner-text');
+
+    if (tabDeterLabel) {
+      tabDeterLabel.textContent = isDog
+        ? '1. เสียงไล่สุนัขใต้ท้องรถ/ล้อ (Deter)'
+        : '1. เสียงไล่แมวใต้ท้องรถ/ซุ้มล้อ (Deter)';
+    }
+    if (tabCoaxLabel) {
+      tabCoaxLabel.textContent = isDog
+        ? '2. เสียงล่อสุนัขออกจากใต้รถ (Coax)'
+        : '2. เสียงล่อออกจากห้องเครื่อง (Coax)';
+    }
+    if (deterBanner) {
+      deterBanner.innerHTML = isDog
+        ? '<strong>ใช้เมื่อสุนัขหลบนอนใต้ท้องรถ พิงยางล้อ หรือนอนขวางจุดอับสายตาหลังรถ:</strong> สุนัขมีช่วงการได้ยินไวมากที่ <strong>4,000–18,500 Hz</strong> การใช้คลื่นนกหวีดความถี่สูงสลับกับเสียงกระป๋องลมอัด (Pet Corrector) จะทำให้สุนัขตื่นตัวและลุกเดินออกจากใต้รถโดยไม่ตื่นตระหนก'
+        : '<strong>ใช้เมื่อแมวหลบอยู่ใต้ท้องรถ บนยางล้อ หรือซุ้มล้อ:</strong> พื้นที่เหล่านี้มีทางออกเปิดโล่ง แมวสามารถวิ่งหนีออกจากตัวรถได้ทันทีเมื่อได้ยินเสียงความถี่สูงหรือเสียงขู่เตือน';
+    }
+    if (coaxBanner) {
+      coaxBanner.innerHTML = isDog
+        ? '<strong>ใช้เมื่อสุนัขขี้กลัวหรือลูกสุนัขไม่ยอมคลานออกจากใต้ท้องรถ:</strong> ห้ามบีบแตรใส่สุนัขที่กำลังกลัวเพราะอาจทำให้หมอบนิ่งใต้เพลาล้อ ให้วางมือถือห่างจากรถ 2 เมตร แล้วเปิดเสียงตุ๊กตาบีบปี๊บ เสียงผิวปากเรียก หรือเสียงเคาะชามอาหารเพื่อดึงดูดให้เดินออกมาเอง'
+        : '<strong>ทำไมต้องใช้เสียงล่อเมื่อแมวติดในห้องเครื่อง? (Engine Bay Paradox):</strong> หากลูกแมวมุดเข้าไปซุกในห้องเครื่องลึกๆ การบีบแตรหรือเปิดเสียงขู่ดังๆ อาจทำให้แมวกลัวสุดขีดแล้ว <em>ตัวแข็งทื่อ (Freeze) หรือมุดหนีลึกเข้าไปในสายพานเครื่องยนต์</em> ให้วางมือถือบนพื้นห่างจากหน้ารถ 1.5–2 เมตร แล้วเปิดเสียงล่อด้านล่างเพื่อให้แมวเดินออกมาเอง';
+    }
+
+    // Update Right Column Inspector Heading & SVG Zone Risk Labels
+    const inspectorHeading = document.getElementById('inspector-heading');
+    const svgZoneA = document.getElementById('svg-zone-a-label');
+    const svgZoneC = document.getElementById('svg-zone-c-label');
+    const svgZoneD = document.getElementById('svg-zone-d-label');
+    const stubA = document.getElementById('stub-title-engine-bay');
+    const stubB = document.getElementById('stub-title-wheel-wells');
+    const stubC = document.getElementById('stub-title-undercarriage');
+    const stubD = document.getElementById('stub-title-rear-exhaust');
+
+    if (inspectorHeading) {
+      inspectorHeading.textContent = isDog
+        ? 'แผนผังจุดเสี่ยงสุนัขซ่อนใต้รถ 4 โซน'
+        : 'แผนผังจุดเสี่ยงแมวซ่อนในรถ 4 โซน';
+    }
+    if (svgZoneA) svgZoneA.textContent = isDog ? 'ใต้กันชน 18%' : 'ห้องเครื่อง 62%';
+    if (svgZoneC) svgZoneC.textContent = isDog ? 'ใต้ท้องรถ 36%' : 'ใต้ท้องรถ 11%';
+    if (svgZoneD) svgZoneD.textContent = isDog ? 'ล้อหลัง 22%' : 'ท่อไอเสีย 6%';
+
+    if (stubA) stubA.textContent = isDog ? 'ใต้กันชนหน้า & สายไฟใต้ห้องเครื่อง' : 'เคาะฝากระโปรง & เช็คห้องเครื่อง';
+    if (stubB) stubB.textContent = isDog ? 'ซุ้มล้อหน้า & ข้างแก้มยางทั้ง 2 ฝั่ง' : 'ซุ้มล้อหน้า & บนหน้ายางทั้ง 2 ฝั่ง';
+    if (stubC) stubC.textContent = isDog ? 'กึ่งกลางใต้ท้องรถ (จุดสุนัขหลบแดด)' : 'ใต้ท้องรถ & แคตตาไลติกคอนเวอร์เตอร์';
+    if (stubD) stubD.textContent = isDog ? 'หลังล้อหลัง & จุดบอดขณะถอยรถ' : 'ซุ้มล้อหลัง & ท่อพักไอเสีย';
   }
 
   initTheme() {
@@ -169,7 +378,8 @@ class CattySafeApp {
           (progress) => this.updateSweepProgressUI(progress),
           () => {
             this.resetSweepUI(true);
-          }
+          },
+          this.species
         );
       });
     }
@@ -216,12 +426,17 @@ class CattySafeApp {
     const stageText = document.getElementById('sweep-stage-title');
     const timeText = document.getElementById('sweep-time-counter');
     const chips = document.querySelectorAll('.stage-step-chip');
+    const isDog = this.species === 'dog';
 
     if (fill) fill.style.width = completed ? '100%' : '0%';
     if (stageText) {
-      stageText.textContent = completed
-        ? 'เสร็จสิ้นการส่งคลื่นเสียงครบ 4 ระยะ (20 วินาที) — โปรดสังเกตความเคลื่อนไหวรอบรถ'
-        : 'พร้อมส่งคลื่นเสียงอัตโนมัติ 4 ระยะ (เคาะปลุก → กวาดความถี่สูง → เสียงขู่ฟ่อ → เสียงเขย่าโลหะ)';
+      if (completed) {
+        stageText.textContent = 'เสร็จสิ้นการส่งคลื่นเสียงครบ 4 ระยะ (20 วินาที) — โปรดสังเกตความเคลื่อนไหวรอบรถ';
+      } else {
+        stageText.textContent = isDog
+          ? 'พร้อมส่งคลื่นเสียงไล่สุนัข 4 ระยะ (เคาะปลุก → นกหวีดอัลตราโซนิก → โซนาร์พัลส์ → กระป๋องลมอัด)'
+          : 'พร้อมส่งคลื่นเสียงอัตโนมัติ 4 ระยะ (เคาะปลุก → กวาดความถี่สูง → เสียงขู่ฟ่อ → เสียงเขย่าโลหะ)';
+      }
     }
     if (timeText) {
       timeText.textContent = completed ? 'สำเร็จ 20.0 วินาที' : '20.0 วินาที';
@@ -301,7 +516,8 @@ class CattySafeApp {
     hotspots.forEach((spot) => {
       spot.addEventListener('click', () => {
         const zoneId = spot.getAttribute('data-zone-hotspot');
-        if (zoneId && VEHICLE_ZONES[zoneId]) {
+        const zoneMap = this.getActiveZoneMap();
+        if (zoneId && zoneMap[zoneId]) {
           this.selectedZoneId = zoneId;
           this.renderZoneInspector();
         }
@@ -310,7 +526,8 @@ class CattySafeApp {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           const zoneId = spot.getAttribute('data-zone-hotspot');
-          if (zoneId && VEHICLE_ZONES[zoneId]) {
+          const zoneMap = this.getActiveZoneMap();
+          if (zoneId && zoneMap[zoneId]) {
             this.selectedZoneId = zoneId;
             this.renderZoneInspector();
           }
@@ -323,7 +540,8 @@ class CattySafeApp {
     stubItems.forEach((item) => {
       item.addEventListener('click', () => {
         const zoneId = item.getAttribute('data-zone-stub');
-        if (zoneId && VEHICLE_ZONES[zoneId]) {
+        const zoneMap = this.getActiveZoneMap();
+        if (zoneId && zoneMap[zoneId]) {
           this.selectedZoneId = zoneId;
           this.renderZoneInspector();
         }
@@ -337,7 +555,8 @@ class CattySafeApp {
 
     if (playZoneBtn) {
       playZoneBtn.addEventListener('click', () => {
-        const zone = VEHICLE_ZONES[this.selectedZoneId];
+        const zoneMap = this.getActiveZoneMap();
+        const zone = zoneMap[this.selectedZoneId];
         if (!zone) return;
         if (this.engine.isPlaying && this.engine.activeProfileId === zone.recommendedProfile) {
           this.engine.stopAll();
@@ -372,7 +591,8 @@ class CattySafeApp {
   }
 
   renderZoneInspector() {
-    const zone = VEHICLE_ZONES[this.selectedZoneId] || VEHICLE_ZONES['engine-bay'];
+    const zoneMap = this.getActiveZoneMap();
+    const zone = zoneMap[this.selectedZoneId] || zoneMap['engine-bay'];
     const isCleared = Boolean(this.clearedZones[zone.id]);
 
     const nameEl = document.getElementById('zone-detail-name');
@@ -455,6 +675,7 @@ class CattySafeApp {
     const startSweepBtn = document.getElementById('btn-start-smart-sweep');
     const startSweepText = document.getElementById('smart-sweep-btn-text');
     const stopBtn = document.getElementById('btn-stop-all');
+    const isDog = this.species === 'dog';
 
     if (pill) pill.setAttribute('data-active', status.isPlaying ? 'true' : 'false');
     if (statusLabel) {
@@ -474,14 +695,22 @@ class CattySafeApp {
 
     const activeProfile = status.activeProfileId ? SOUND_PROFILES[status.activeProfileId] : null;
     if (gainReadout) {
-      gainReadout.textContent = activeProfile ? activeProfile.pinnaeGainDb : '+14 dB (ช่วงไวสุด)';
+      gainReadout.textContent = activeProfile
+        ? activeProfile.pinnaeGainDb
+        : (isDog ? '+13 dB (พีคหูสุนัข 4–8 kHz)' : '+14 dB (ช่วงไวสุด)');
     }
 
     if (startSweepBtn && startSweepText) {
       startSweepBtn.setAttribute('data-sweeping', status.isSmartSweeping ? 'true' : 'false');
-      startSweepText.textContent = status.isSmartSweeping
-        ? 'กำลังสแกนไล่แมวอัตโนมัติ 20 วินาที (แตะเพื่อหยุด)'
-        : 'เริ่มส่งคลื่นเสียงไล่แมวอัตโนมัติ 20 วินาที (4 ระยะ)';
+      if (status.isSmartSweeping) {
+        startSweepText.textContent = isDog
+          ? 'กำลังสแกนไล่สุนัขอัตโนมัติ 20 วินาที (แตะเพื่อหยุด)'
+          : 'กำลังสแกนไล่แมวอัตโนมัติ 20 วินาที (แตะเพื่อหยุด)';
+      } else {
+        startSweepText.textContent = isDog
+          ? 'เริ่มส่งคลื่นเสียงไล่สุนัขอัตโนมัติ 20 วินาที (4 ระยะ)'
+          : 'เริ่มส่งคลื่นเสียงไล่แมวอัตโนมัติ 20 วินาที (4 ระยะ)';
+      }
     }
 
     if (stopBtn) {
@@ -509,9 +738,13 @@ class CattySafeApp {
     // Update torch modal button if open
     const torchSoundBtnText = document.getElementById('torch-sound-btn-label');
     if (torchSoundBtnText) {
-      torchSoundBtnText.textContent = status.isPlaying
-        ? 'หยุดคลื่นเสียงไล่แมว'
-        : 'ปล่อยคลื่นความถี่สูงกวาด (13.5–19.5 kHz)';
+      if (status.isPlaying) {
+        torchSoundBtnText.textContent = isDog ? 'หยุดคลื่นเสียงไล่สุนัข' : 'หยุดคลื่นเสียงไล่แมว';
+      } else {
+        torchSoundBtnText.textContent = isDog
+          ? 'ปล่อยคลื่นนกหวีดสุนัข (12.0–18.5 kHz)'
+          : 'ปล่อยคลื่นความถี่สูงกวาด (13.5–19.5 kHz)';
+      }
     }
 
     this.renderZoneInspector();
@@ -546,7 +779,7 @@ class CattySafeApp {
       switchCoaxBtn.addEventListener('click', () => {
         const coaxTab = document.getElementById('tab-btn-coax');
         if (coaxTab) coaxTab.click();
-        this.engine.playProfile('kitten-contact-call');
+        this.engine.playProfile(this.species === 'dog' ? 'dog-squeaky-toy' : 'kitten-contact-call');
       });
     }
   }
@@ -765,14 +998,14 @@ class CattySafeApp {
         if (this.engine.isPlaying) {
           this.engine.stopAll();
         } else {
-          this.engine.playProfile('ultrasonic-sweep');
+          this.engine.playProfile(this.species === 'dog' ? 'dog-whistle-sweep' : 'ultrasonic-sweep');
         }
       });
     }
   }
 
   // =========================================================================
-  // REAL-TIME CANVAS VISUALIZER (FELINE AUDIOGRAM + LIVE FFT / OSCILLOSCOPE)
+  // REAL-TIME CANVAS VISUALIZER (FELINE/CANINE AUDIOGRAM + LIVE FFT / OSCILLOSCOPE)
   // =========================================================================
 
   startCanvasLoop() {
@@ -823,12 +1056,15 @@ class CattySafeApp {
     const padTop = 18;
     const padBottom = 26;
     const plotH = h - padTop - padBottom;
+    const isDog = this.species === 'dog';
 
-    // 1. Highlight Smartphone Deliverable High-Sensitivity Deterrent Zone (13.5 kHz - 19.5 kHz)
-    const x13k = this.freqToX(13500, w, padLeft, padRight);
-    const x19k = this.freqToX(19500, w, padLeft, padRight);
+    // 1. Highlight Smartphone Deliverable High-Sensitivity Deterrent Zone
+    const bandLow = isDog ? 12000 : 13500;
+    const bandHigh = isDog ? 18500 : 19500;
+    const xLow = this.freqToX(bandLow, w, padLeft, padRight);
+    const xHigh = this.freqToX(bandHigh, w, padLeft, padRight);
     ctx.fillStyle = 'rgba(255, 122, 69, 0.14)';
-    ctx.fillRect(x13k, padTop, x19k - x13k, plotH);
+    ctx.fillRect(xLow, padTop, xHigh - xLow, plotH);
 
     // Subtle Grid Lines & Log Frequency Tick Labels
     ctx.strokeStyle = '#232B36';
@@ -858,11 +1094,11 @@ class CattySafeApp {
       }
     });
 
-    // Top zone badge inside 13.5-19.5 kHz band
+    // Top zone badge inside target band
     if (w > 420) {
       ctx.fillStyle = '#FFB088';
       ctx.font = '600 9.5px "JetBrains Mono", monospace';
-      ctx.fillText('13.5–19.5kHz', (x13k + x19k) / 2, padTop + 11);
+      ctx.fillText(isDog ? '12.0–18.5kHz' : '13.5–19.5kHz', (xLow + xHigh) / 2, padTop + 11);
     }
 
     // Horizontal sensitivity guide lines
@@ -892,16 +1128,22 @@ class CattySafeApp {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 3. Draw Feline Auditory Sensitivity Curve (45 Hz - 64 kHz, broad peak 500 Hz - 32 kHz)
-    const catPoints = [
-      [45, 0.15], [120, 0.45], [500, 0.78], [2000, 0.90],
-      [8000, 0.98], [16000, 0.95], [24000, 0.88], [32000, 0.76],
-      [48000, 0.42], [64000, 0.10]
-    ];
+    // 3. Draw Species Auditory Sensitivity Curve (Cat: 45 Hz - 64 kHz vs Dog: 67 Hz - 45 kHz)
+    const speciesPoints = isDog
+      ? [
+          [67, 0.12], [150, 0.44], [500, 0.76], [2000, 0.90],
+          [4000, 0.97], [8000, 0.98], [16000, 0.89], [24000, 0.72],
+          [35000, 0.42], [45000, 0.10]
+        ]
+      : [
+          [45, 0.15], [120, 0.45], [500, 0.78], [2000, 0.90],
+          [8000, 0.98], [16000, 0.95], [24000, 0.88], [32000, 0.76],
+          [48000, 0.42], [64000, 0.10]
+        ];
     ctx.beginPath();
     ctx.strokeStyle = '#FF7A45';
     ctx.lineWidth = 2.5;
-    catPoints.forEach(([hz, sens], i) => {
+    speciesPoints.forEach(([hz, sens], i) => {
       const px = this.freqToX(hz, w, padLeft, padRight);
       const py = padTop + (1 - sens) * plotH;
       if (i === 0) ctx.moveTo(px, py);

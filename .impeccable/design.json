@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-24T15:26:30+07:00",
+  "title": "Design System: CattySafe",
+  "extensions": {
+    "colorMeta": {
+      "deter-primary": {
+        "role": "primary",
+        "displayName": "Highway Safety Vermilion",
+        "canonical": "#C23B13",
+        "tonalRamp": ["#3B0E02", "#5C1805", "#7E2208", "#9E2C0B", "#C23B13", "#E05A32", "#F39B80", "#FDECE7"]
+      },
+      "coax-primary": {
+        "role": "secondary",
+        "displayName": "Lure Signal Cobalt",
+        "canonical": "#1554C0",
+        "tonalRamp": ["#071B42", "#0B2D6E", "#0E419A", "#1554C0", "#3373DF", "#669BF0", "#ADC9F8", "#E6F0FD"]
+      },
+      "safe-primary": {
+        "role": "tertiary",
+        "displayName": "Clearance Emerald",
+        "canonical": "#0D6B49",
+        "tonalRamp": ["#042619", "#063D29", "#085438", "#0D6B49", "#178F64", "#3BB589", "#8CD9BC", "#E1F5EC"]
+      },
+      "bg-ground": {
+        "role": "neutral",
+        "displayName": "Technical Slate-Mist Ground",
+        "canonical": "#EDF1F5",
+        "tonalRamp": ["#11151A", "#181E26", "#28303B", "#475569", "#64748B", "#CBD5E1", "#DEE5ED", "#EDF1F5"]
+      },
+      "ink-primary": {
+        "role": "neutral",
+        "displayName": "Asphalt Carbon Ink",
+        "canonical": "#0F172A",
+        "tonalRamp": ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#F1F5F9"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Primary workbench and research monograph headings." },
+      "headline": { "displayName": "Headline", "purpose": "Section and vehicle schematic titles." },
+      "title": { "displayName": "Title", "purpose": "Sound profile card headers and primary action buttons." },
+      "body": { "displayName": "Body", "purpose": "Ethological descriptions, usage guidance, and research tables." },
+      "label": { "displayName": "Label / Telemetry Mono", "purpose": "Tabular Hz readouts, countdowns, and Pinnae gain badges." }
+    },
+    "shadows": [
+      {
+        "name": "shadow-elevated",
+        "value": "0 8px 24px -6px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04)",
+        "purpose": "Neutral structural elevation for workbench panels."
+      },
+      {
+        "name": "shadow-interactive",
+        "value": "0 8px 20px -4px rgba(15, 23, 42, 0.16)",
+        "purpose": "Neutral physical lift on the primary 20-second sweep trigger."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Responsive tactile button feedback and active telemetry pulse."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "680px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary 20s Smart Sweep Button",
+      "kind": "button",
+      "refersTo": "button-primary-sweep",
+      "description": "One-tap pre-drive 4-stage acoustic sweep trigger.",
+      "html": "<button class=\"ds-btn-sweep\">เริ่มส่งคลื่นเสียงไล่แมวอัตโนมัติ 20 วินาที (4 ระยะ)</button>",
+      "css": ".ds-btn-sweep { background: #C23B13; color: #FFFFFF; padding: 16px 24px; border-radius: 10px; border: 1px solid transparent; font-family: 'Bai Jamjuree', sans-serif; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.16); transition: background-color 0.18s ease, transform 0.18s ease; } .ds-btn-sweep:hover { background: #9E2C0B; transform: translateY(-1px); } .ds-btn-sweep:focus-visible { outline: 3px solid #C23B13; outline-offset: 3px; }"
+    },
+    {
+      "name": "Sound Profile Trigger Button",
+      "kind": "button",
+      "refersTo": "button-sound-play",
+      "description": "Compact single-line trigger button inside acoustic profile cards.",
+      "html": "<button class=\"ds-btn-play\">ปล่อยคลื่นเสียง</button>",
+      "css": ".ds-btn-play { background: #DEE5ED; color: #0F172A; padding: 8px 15px; border-radius: 6px; border: 1px solid #5B6B82; font-family: 'Bai Jamjuree', sans-serif; font-size: 0.86rem; font-weight: 700; white-space: nowrap; cursor: pointer; } .ds-btn-play:hover { background: #C23B13; color: #FFFFFF; border-color: #C23B13; } .ds-btn-play:focus-visible { outline: 3px solid #C23B13; outline-offset: 3px; }"
+    },
+    {
+      "name": "Acoustic Profile Card",
+      "kind": "card",
+      "refersTo": "card-panel",
+      "description": "Individual sound synthesis profile container with frequency badge and Pinnae gain telemetry.",
+      "html": "<article class=\"ds-sound-card\"><div class=\"ds-row-top\"><strong>คลื่นความถี่สูงกวาดสลับ (FM Sweep)</strong><span class=\"ds-freq\">13.5 – 19.5 kHz</span></div><p>กวาดความถี่ขึ้น-ลงแบบสุ่มในช่วงสูงสุดที่ลำโพงมือถือส่งออกได้จริง</p></article>",
+      "css": ".ds-sound-card { background: #F8FAFC; color: #0F172A; padding: 16px 18px; border-radius: 10px; border: 1px solid #5B6B82; font-family: 'Noto Sans Thai', sans-serif; } .ds-row-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; } .ds-freq { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: #DEE5ED; padding: 3px 8px; border-radius: 6px; border: 1px solid #CBD5E1; }"
+    },
+    {
+      "name": "Neko Ban Ban Zone Clearance Stub",
+      "kind": "custom",
+      "refersTo": "card-panel",
+      "description": "Sequential vehicle zone check stub with stamped clearance state.",
+      "html": "<div class=\"ds-zone-stub\"><span><strong>ZONE A</strong> เคาะฝากระโปรง & เช็คห้องเครื่อง</span><span class=\"ds-stamp\">ปลอดภัย 15:25</span></div>",
+      "css": ".ds-zone-stub { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 6px; background: #E1F5EC; border: 1px solid #2E9B73; color: #0F172A; font-family: 'Noto Sans Thai', sans-serif; font-size: 0.88rem; } .ds-stamp { background: #0D6B49; color: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Veterinary Audiology & Neko Ban Ban Field Console",
+    "overview": "CattySafe is an operational bio-acoustic instrument built for drivers standing beside a parked vehicle in a carport, street, or dim underground garage. Its visual system draws from Japanese Neko Ban Ban automotive inspection protocols and veterinary audiology field instruments.",
+    "keyCharacteristics": [
+      "Dual-Environment Day/Night Garage Polarity (#EDF1F5 daylight slate-mist / #11151A night asphalt)",
+      "Tri-Role Semantic Action Coding (Vermilion for Deter, Cobalt for Coax, Emerald for Cleared)",
+      "Live Bio-Acoustic Telemetry over the 45 Hz – 64 kHz feline hearing curve",
+      "Drawn 1.85px-stroke technical SVG iconography and schematic geometry"
+    ],
+    "rules": [
+      {
+        "name": "The Functional Signal Rule",
+        "body": "Vermilion (#C23B13), Cobalt (#1554C0), and Emerald (#0D6B49) never appear as decorative splashes; they strictly encode Deter/Flush, Coax/Lure, and Cleared Zone states respectively.",
+        "section": "colors"
+      },
+      {
+        "name": "The 3:1 Boundary Rule",
+        "body": "Every interactive button, sound card, switch, and zone stub carries an explicit 1px border (#5B6B82 light / #6C7787 dark) with at least 3:1 contrast against its surface.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Telemetry Rule",
+        "body": "All live Hz readouts, countdown timers, and frequency band badges must use JetBrains Mono with font-variant-numeric: tabular-nums so rapidly sweeping frequencies never jitter layout width.",
+        "section": "typography"
+      },
+      {
+        "name": "The Neutral Shadow Rule",
+        "body": "Elevation shadows are always neutral slate/black with soft blur; never use chromatic glow shadows on dark or light surfaces.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do pair high-frequency sweeps (13.5–19.5 kHz) with the live Feline vs. Human Audiogram canvas so drivers see the active frequency relative to feline pinnae sensitivity.",
+      "Do keep Coax/Lure profiles (#1554C0 Cobalt) visually distinct from Deter/Flush profiles (#C23B13 Vermilion) to prevent drivers from panicking kittens trapped inside engine bays.",
+      "Do keep button labels (ปล่อยคลื่นเสียง, หยุดเสียง, รอตรวจเช็ค) on a single line with white-space: nowrap."
+    ],
+    "donts": [
+      "Don't add eyebrow or kicker labels above headings.",
+      "Don't use Unicode emojis in place of drawn 1.85px-stroke SVG icons.",
+      "Don't use warm cream/beige page backgrounds or colored neon box-shadow glows."
+    ]
+  }
+}

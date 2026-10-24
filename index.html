@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CattySafe — ระบบส่งคลื่นเสียงป้องกันแมวติดใต้ท้องรถและห้องเครื่อง (Bio-Acoustic Car Safety)</title>
+  <meta name="description" content="เว็บแอพสังเคราะห์คลื่นเสียงไล่แมวใต้ท้องรถ (13.5–19.5 kHz FM Sweep, เสียงขู่ฟ่อ, เสียงโลหะ) และโหมดเสียงล่อลูกแมวออกจากห้องเครื่อง พร้อมเช็คลิสต์ Neko Ban Ban 4 จุดก่อนสตาร์ทรถ">
+  <meta name="theme-color" content="#C23B13">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-workbench">ข้ามไปยังแผงควบคุมส่งคลื่นเสียงหลัก</a>
+
+  <!-- Top Instrument & Utility Bar -->
+  <header class="top-bar">
+    <div class="top-bar-inner">
+      <div class="brand-cluster">
+        <div class="brand-emblem" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 11V6l3.5 2.5a7.5 7.5 0 0 1 9 0L20 6v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10Z"/>
+            <circle cx="9.5" cy="11.5" r="1"/>
+            <circle cx="14.5" cy="11.5" r="1"/>
+            <path d="M10 14.5c.7.6 1.3.8 2 .8s1.3-.2 2-.8"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">CattySafe · ระบบส่งคลื่นเสียงป้องกันแมวใต้ท้องรถ</h1>
+          <p class="brand-subtitle">เครื่องสังเคราะห์ความถี่ชีวภาพ 13.5–19.5 kHz &amp; โปรโตคอลตรวจเช็คห้องเครื่อง Neko Ban Ban</p>
+        </div>
+      </div>
+
+      <div class="top-controls">
+        <div id="top-telemetry-pill" class="telemetry-pill" data-active="false" role="status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="top-status-text" class="tabular-nums">สแตนด์บายพร้อมส่งเสียง</span>
+        </div>
+
+        <button type="button" id="btn-open-torch" class="torch-btn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+            <path d="M9 18h6"/>
+            <path d="M10 22h4"/>
+          </svg>
+          <span>ไฟส่องซุ้มล้อ/ใต้รถ</span>
+        </button>
+
+        <label class="theme-switch-label" for="garage-night-switch">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+          <span>โหมดลานจอดมืด</span>
+          <input id="garage-night-switch" type="checkbox" switch>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main First-Viewport Operating Workbench -->
+  <main id="main-workbench" class="workbench-container">
+    <div class="workbench-grid">
+
+      <!-- Left Column: Bio-Acoustic Synthesizer & Smart Sweep -->
+      <section class="panel-surface" aria-labelledby="sweep-console-heading">
+
+        <!-- 1-Tap 20-Second Pre-Drive Smart Sweep -->
+        <div class="smart-sweep-banner">
+          <div class="sweep-header-row">
+            <div>
+              <h2 id="sweep-console-heading" class="sweep-heading">โปรแกรมส่งคลื่นเสียงเคลียร์รถอัตโนมัติ 20 วินาที</h2>
+              <p class="sweep-lead">
+                กดปุ่มเดียวก่อนขึ้นรถ ระบบจะไล่ส่งคลื่นเสียง 4 รูปแบบต่อเนื่อง (เคาะทุ้มปลุกแมวหลับ → คลื่นความถี่สูงกวาด 13.5–19.5 kHz → เสียงแมวเจ้าถิ่นขู่ฟ่อ → เสียงเขย่าโลหะ) เพื่อป้องกันแมวชินกับเสียงเดิม
+              </p>
+            </div>
+          </div>
+
+          <div class="sweep-action-row">
+            <button type="button" id="btn-start-smart-sweep" class="btn-primary-sweep" data-sweeping="false">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              </svg>
+              <span id="smart-sweep-btn-text">เริ่มส่งคลื่นเสียงไล่แมวอัตโนมัติ 20 วินาที (4 ระยะ)</span>
+            </button>
+
+            <button type="button" id="btn-stop-all" class="btn-stop-emergency" disabled>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="6" y="6" width="12" height="12" rx="2"/>
+              </svg>
+              <span>หยุดเสียงทันที</span>
+            </button>
+
+            <div class="volume-control-group">
+              <label for="master-volume-slider">ความแรงเสียง</label>
+              <input id="master-volume-slider" class="volume-slider" type="range" min="15" max="100" value="85">
+              <span id="master-volume-value" class="tabular-nums">85%</span>
+            </div>
+          </div>
+
+          <!-- 4-Stage Automated Sweep Progress -->
+          <div class="sweep-progress-box" aria-live="polite">
+            <div class="sweep-stage-header">
+              <span id="sweep-stage-title">พร้อมส่งคลื่นเสียงอัตโนมัติ 4 ระยะ (เคาะปลุก → กวาดความถี่สูง → เสียงขู่ฟ่อ → เสียงเขย่าโลหะ)</span>
+              <span id="sweep-time-counter" class="tabular-nums">20.0 วินาที</span>
+            </div>
+            <div class="sweep-bar-track" role="progressbar" aria-label="ความคืบหน้าการส่งคลื่นเสียง 20 วินาที" aria-valuemin="0" aria-valuemax="100">
+              <div id="sweep-progress-fill" class="sweep-bar-fill"></div>
+            </div>
+            <div class="sweep-stage-pills">
+              <div class="stage-step-chip" data-stage="1" data-current="false">
+                <span class="tabular-nums">0–4s</span>
+                <span>เคาะปลุก 75–380Hz</span>
+              </div>
+              <div class="stage-step-chip" data-stage="2" data-current="false">
+                <span class="tabular-nums">4–10s</span>
+                <span>กวาดคลื่น 13.5–19.5kHz</span>
+              </div>
+              <div class="stage-step-chip" data-stage="3" data-current="false">
+                <span class="tabular-nums">10–15s</span>
+                <span>ขู่ฟ่อ 3.5–11.5kHz</span>
+              </div>
+              <div class="stage-step-chip" data-stage="4" data-current="false">
+                <span class="tabular-nums">15–20s</span>
+                <span>เขย่าโลหะ 4–15kHz</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Acoustic Spectrum & Feline Audiogram Overlay -->
+        <div class="visualizer-section">
+          <div class="visualizer-toolbar">
+            <div class="visualizer-metrics">
+              <div class="metric-item">
+                <span class="metric-label">ความถี่ปัจจุบัน:</span>
+                <span id="metric-hz-value" class="metric-value">0 Hz (พักสัญญาณ)</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">รูปแบบคลื่น:</span>
+                <span id="metric-mod-value" class="metric-value safe-tone">พร้อมทำงาน (Standby)</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">กรวยหูแมวขยายเสียง:</span>
+                <span id="metric-pinnae-value" class="metric-value">+14 dB (ช่วงไวสุด)</span>
+              </div>
+            </div>
+
+            <div class="canvas-view-tabs" role="group" aria-label="รูปแบบกราฟวิเคราะห์เสียง">
+              <button type="button" class="canvas-tab-btn" data-canvas-mode="audiogram" aria-pressed="true">
+                กราฟการได้ยินแมวเทียบคน (Audiogram)
+              </button>
+              <button type="button" class="canvas-tab-btn" data-canvas-mode="waveform" aria-pressed="false">
+                คลื่นสัญญาณสด (Oscilloscope)
+              </button>
+            </div>
+          </div>
+
+          <div class="canvas-frame">
+            <canvas id="acoustic-canvas" width="760" height="176" aria-label="กราฟแสดงความถี่เสียงแบบเรียลไทม์เทียบกับช่วงการได้ยินของแมวและมนุษย์"></canvas>
+          </div>
+
+          <div class="canvas-legend">
+            <div class="legend-items">
+              <span class="legend-entry">
+                <span class="legend-swatch" style="background:#FF7A45;"></span>
+                <span>เส้นความไวหูแมว (45 Hz – 64 kHz · ไวสุดที่ 500 Hz – 32 kHz)</span>
+              </span>
+              <span class="legend-entry">
+                <span class="legend-swatch" style="background:#6D9DC5;"></span>
+                <span>เส้นการได้ยินมนุษย์ (20 Hz – 20 kHz)</span>
+              </span>
+              <span class="legend-entry">
+                <span class="legend-swatch" style="background:#29C48A;"></span>
+                <span>พลังงานคลื่นเสียงที่ส่งออกจริงจากลำโพง</span>
+              </span>
+            </div>
+            <span>แถบสีส้ม = ย่าน 13.5–19.5 kHz ที่ลำโพงมือถือส่งออกได้เต็มพลังและแมวรำคาญสูงสุด</span>
+          </div>
+        </div>
+
+        <!-- Stepped 4-Mode Tab Navigation -->
+        <div class="mode-rail-nav" role="tablist" aria-label="โหมดการทำงานของระบบเสียง">
+          <button type="button" id="tab-btn-deter" class="mode-tab-btn" role="tab" aria-selected="true" aria-controls="panel-deter" data-mode-theme="deter">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span>เสียงไล่แมวใต้รถ (6)</span>
+          </button>
+
+          <button type="button" id="tab-btn-coax" class="mode-tab-btn" role="tab" aria-selected="false" aria-controls="panel-coax" data-mode-theme="coax">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+            </svg>
+            <span>เสียงล่อออกจากห้องเครื่อง (4)</span>
+          </button>
+
+          <button type="button" id="tab-btn-listen" class="mode-tab-btn" role="tab" aria-selected="false" aria-controls="panel-listen" data-mode-theme="listen">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" x2="12" y1="19" y2="22"/>
+            </svg>
+            <span>ฟังเสียงในห้องเครื่อง</span>
+          </button>
+
+          <button type="button" id="tab-btn-lab" class="mode-tab-btn" role="tab" aria-selected="false" aria-controls="panel-lab" data-mode-theme="deter">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4" x2="4" y1="21" y2="14"/>
+              <line x1="4" x2="4" y1="10" y2="3"/>
+              <line x1="12" x2="12" y1="21" y2="12"/>
+              <line x1="12" x2="12" y1="8" y2="3"/>
+              <line x1="20" x2="20" y1="21" y2="16"/>
+              <line x1="20" x2="20" y1="12" y2="3"/>
+              <line x1="2" x2="6" y1="14" y2="14"/>
+              <line x1="10" x2="14" y1="8" y2="8"/>
+              <line x1="18" x2="22" y1="16" y2="16"/>
+            </svg>
+            <span>ปรับความถี่เอง (Hz Lab)</span>
+          </button>
+        </div>
+
+        <!-- TAB PANEL 1: DETER & FLUSH PROFILES -->
+        <div id="panel-deter" class="mode-panel" role="tabpanel" aria-labelledby="tab-btn-deter">
+          <div class="mode-context-banner">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" x2="12" y1="8" y2="12"/>
+              <line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+            <div>
+              <strong>โหมดไล่แมวใต้ท้องรถและซุ้มล้อ (Deter &amp; Flush):</strong> ใช้เมื่อแมวซ่อนตัวอยู่ใต้ท้องรถ บนยางล้อ หรือซุ้มล้อที่มีทางวิ่งหนีออกด้านนอกชัดเจน คลื่นเสียงจะกระตุ้นสัญชาตญาณระวังภัยและความรำคาญในกรวยหูแมวโดยไม่ทำอันตรายต่อแก้วหู
+            </div>
+          </div>
+
+          <div class="sound-grid">
+            <!-- Profile 1: Ultrasonic FM Sweep -->
+            <article class="sound-trigger-row" data-profile-id="ultrasonic-sweep" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">คลื่นความถี่สูงกวาดสลับ (FM Sweep)</h3>
+                  <span class="sound-freq-badge">13.5 – 19.5 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  กวาดความถี่ขึ้น-ลงแบบสุ่มในช่วงสูงสุดที่ลำโพงมือถือส่งออกได้จริง ป้องกันแมวเกิดความเคยชิน (Anti-Habituation) เสียงแหลมเสียดหูแมวแต่คนได้ยินเบา
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Pinnae Gain: +14 dB · ประสิทธิผล 96%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- Profile 2: Aggressive Feline Hiss -->
+            <article class="sound-trigger-row" data-profile-id="feline-hiss" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงแมวเจ้าถิ่นขู่ฟ่อและพ่นลม (Hiss &amp; Spit)</h3>
+                  <span class="sound-freq-badge">3.5 – 11.5 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  จำลองคลื่นพ่นลม Sibilant Noise หัวคลื่นคม (&lt;12 ms) ตรงกับสัญญาณเตือนภัยตามสัญชาตญาณแมวว่ามีแมวเจ้าถิ่นกำลังจะโจมตี
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Pinnae Gain: +15 dB · ประสิทธิผล 94%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- Profile 3: Metallic Shaker Can -->
+            <article class="sound-trigger-row" data-profile-id="metallic-shaker" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงเขย่ากระป๋องโลหะ/เหรียญ (Shaker Can)</h3>
+                  <span class="sound-freq-badge">4.0 – 15.0 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  สร้างหัวคลื่นโลหะกระทบกันแบบสุ่มจังหวะ กรวยหูแมวขยายเสียงแหลมคมย่าน 4–15 kHz จนแมวสะดุ้งและเดินหนีออกจากจุดอับใต้ท้องรถ
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Pinnae Gain: +13 dB · ประสิทธิผล 91%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- Profile 4: Canine Growl & Bark -->
+            <article class="sound-trigger-row" data-profile-id="canine-warning" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงสุนัขคำรามและเห่าเตือน (Canine Bark)</h3>
+                  <span class="sound-freq-badge">140 – 2,600 Hz</span>
+                </div>
+                <p class="sound-desc">
+                  ความถี่ต่ำจำลองเสียงคำรามในลำคอ (145 Hz Formant) ตามด้วยเสียงเห่ากระแทก กระตุ้นให้แมวรีบออกจากพื้นใต้รถเพื่อขึ้นที่สูง
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Predator Reflex · ประสิทธิผล 89%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- Profile 5: Dual-Band Bio-Alarm -->
+            <article class="sound-trigger-row" data-profile-id="dual-bio-alarm" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">ไซเรนความถี่คู่รบกวนทิศทาง (Dual Chirp)</h3>
+                  <span class="sound-freq-badge">2.8 &amp; 16.2 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  ปล่อยคลื่นคู่ที่ไม่ประสานกันพร้อมกัน (Dissonant Dual-Oscillator) ทำให้การระบุพิกัดเสียงของแมวสับสนและไม่อยากพักใต้รถ
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Pinnae Gain: +14 dB · ประสิทธิผล 92%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- Profile 6: Neko Ban Ban Knock -->
+            <article class="sound-trigger-row" data-profile-id="neko-banban-knock" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงเคาะฝากระโปรงปลุกแมว (Knock Pulse)</h3>
+                  <span class="sound-freq-badge">75 – 380 Hz + สั่น</span>
+                </div>
+                <p class="sound-desc">
+                  คลื่นกระแทกความถี่ต่ำคู่กับการสั่นมอเตอร์โทรศัพท์ สำหรับแตะฝากระโปรงรถเพื่อปลุกแมวที่หลับลึกให้ตื่นตัวก่อนส่งคลื่นไล่
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Vibro-Acoustic · ประสิทธิผล 86%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <!-- TAB PANEL 2: COAX & LURE PROFILES (ENGINE BAY PARADOX SOLUTION) -->
+        <div id="panel-coax" class="mode-panel" role="tabpanel" aria-labelledby="tab-btn-coax" hidden>
+          <div class="mode-context-banner coax-banner">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;" aria-hidden="true">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" x2="12" y1="9" y2="13"/>
+              <line x1="12" x2="12.01" y1="17" y2="17"/>
+            </svg>
+            <div>
+              <strong>ทำไมต้องใช้เสียงล่อเมื่อแมวติดในห้องเครื่อง? (Engine Bay Paradox):</strong> หากลูกแมวมุดเข้าไปซุกในห้องเครื่องลึกๆ การบีบแตรหรือเปิดเสียงขู่ดังๆ อาจทำให้แมวกลัวสุดขีดแล้ว <em>ตัวแข็งทื่อ (Freeze) หรือมุดหนีลึกเข้าไปในสายพานเครื่องยนต์</em> ให้วางมือถือบนพื้นห่างจากหน้ารถ 1.5–2 เมตร แล้วเปิดเสียงล่อด้านล่างเพื่อให้แมวเดินออกมาเอง
+            </div>
+          </div>
+
+          <div class="sound-grid">
+            <!-- Coax 1: Kitten Contact Call -->
+            <article class="sound-trigger-row coax-variant" data-profile-id="kitten-contact-call" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงลูกแมวร้องเรียกแม่ (Kitten Contact Meow)</h3>
+                  <span class="sound-freq-badge">850 – 1,650 Hz</span>
+                </div>
+                <p class="sound-desc">
+                  สังเคราะห์ฮาร์มอนิกเสียงลูกแมวร้องเรียก (Pitch Contour โค้งขึ้นแล้วตกลง) กระตุ้นทั้งแม่แมว ลูกแมวตัวอื่น และแมวทั่วไปให้มุดออกมาตามหาต้นเสียงนอกรถ
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Social Lure · ประสิทธิผลล่อออก 95%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- Coax 2: Wet Food Can & Kibble -->
+            <article class="sound-trigger-row coax-variant" data-profile-id="food-can-kibble" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงเปิดกระป๋องอาหารและเทอาหารเม็ด</h3>
+                  <span class="sound-freq-badge">1.8 – 9.5 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  จำลองเสียงงัดฝากระป๋องโลหะ (Pull-Tab Pop) ตามด้วยเม็ดอาหารกระทบชาม เปลี่ยนความกลัวของแมวให้กลายเป็นความอยากอาหารแล้วเดินออกมา
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Food Pavlovian · ประสิทธิผลล่อออก 93%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- Coax 3: Prey Squeak -->
+            <article class="sound-trigger-row coax-variant" data-profile-id="prey-squeak" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงหนูร้องจี๊ดกระตุ้นความสนใจ (Prey Squeak)</h3>
+                  <span class="sound-freq-badge">4.5 – 8.8 kHz</span>
+                </div>
+                <p class="sound-desc">
+                  ตรงกับจุดที่ประสาทหูแมวไวที่สุดตามวิวัฒนาการ (8 kHz Peak) ดึงดูดให้แมวที่กำลังซ่อนตัวในมุมมืดย่องออกมาดูต้นเสียงนอกตัวรถ
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Prey Curiosity · ประสิทธิผลล่อออก 90%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- Coax 4: Maternal Friendly Trill -->
+            <article class="sound-trigger-row coax-variant" data-profile-id="friendly-trill" data-playing="false">
+              <div>
+                <div class="sound-row-top">
+                  <h3 class="sound-title-th">เสียงแม่แมวทักทาย Prrp-Trill (Friendly Call)</h3>
+                  <span class="sound-freq-badge">420 – 1,400 Hz</span>
+                </div>
+                <p class="sound-desc">
+                  คลื่นเสียงสั่นเครือในลำคอ (28 Hz Vibrato Trill) ที่แม่แมวใช้เรียกลูกให้เดินตาม ช่วยคลายความตื่นกลัวของลูกแมวที่ติดใต้ฝากระโปรง
+                </p>
+              </div>
+              <div class="sound-row-actions">
+                <span class="pinnae-tag">Calming Signal · ประสิทธิผลล่อออก 88%</span>
+                <button type="button" class="btn-sound-play">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span class="btn-sound-play-label">ปล่อยคลื่นเสียง</span>
+                </button>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <!-- TAB PANEL 3: ENGINE BAY ACOUSTIC MIC LISTENER -->
+        <div id="panel-listen" class="mode-panel" role="tabpanel" aria-labelledby="tab-btn-listen" hidden>
+          <div class="listener-box">
+            <div class="mode-context-banner">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;" aria-hidden="true">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              </svg>
+              <div>
+                <strong>โหมดฟังเสียงตอบรับจากห้องเครื่อง (Engine Bay Acoustic Monitor):</strong> หลังเคาะฝากระโปรงรถ 3 ครั้ง ให้จ่อไมโครโฟนมือถือใกล้ช่องกระจังหน้าหรือรอยต่อฝากระโปรง ระบบจะกรองเฉพาะย่านความถี่เสียงร้องลูกแมวและเสียงขูดขีด (600–3,200 Hz)
+              </div>
+            </div>
+
+            <div class="listener-controls">
+              <button type="button" id="btn-start-mic-listen" class="btn-secondary-action" data-active="false">
+                เปิดไมโครโฟนขยายเสียงห้องเครื่อง
+              </button>
+              <button type="button" id="btn-simulate-kitten-detect" class="btn-secondary-action">
+                จำลองการตรวจพบเสียงลูกแมวร้อง (ทดสอบระบบ)
+              </button>
+            </div>
+
+            <div class="mic-meter-card" aria-live="polite">
+              <div style="display:flex; justify-content:space-between; font-size:0.86rem; font-weight:600;">
+                <span id="mic-status-readout">พร้อมตรวจจับเสียงร้องเหมียวหรือเสียงขูดขีดในห้องเครื่อง (ย่านกรอง 600–3,200 Hz)</span>
+                <span id="mic-db-readout" class="tabular-nums">ระดับสัญญาณห้องเครื่อง: 4% (ปกติ)</span>
+              </div>
+              <div class="mic-level-track">
+                <div id="mic-level-fill" class="mic-level-fill"></div>
+              </div>
+            </div>
+
+            <div id="mic-alert-recommendation" class="mode-context-banner coax-banner" hidden>
+              <div>
+                <strong>ตรวจพบความเคลื่อนไหวในย่านเสียงลูกแมว (1.1–1.5 kHz)!</strong> ห้ามสตาร์ทเครื่องยนต์เด็ดขาด แนะนำให้เปิดฝากระโปรงรถตรวจสอบด้วยตาเปล่า หรือกดปุ่มด้านล่างเพื่อสลับไปเปิดเสียงลูกแมวร้องล่อให้ออกมา
+                <div style="margin-top:0.6rem;">
+                  <button type="button" id="btn-jump-to-coax" class="btn-secondary-action">
+                    สลับไปโหมดเสียงล่อแมวออกจากห้องเครื่องทันที
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB PANEL 4: MANUAL BIO-FREQUENCY LAB -->
+        <div id="panel-lab" class="mode-panel" role="tabpanel" aria-labelledby="tab-btn-lab" hidden>
+          <div class="lab-box">
+            <div class="mode-context-banner">
+              <div>
+                <strong>ห้องปฏิบัติการปรับความถี่ชีวภาพแมว (Manual Bio-Frequency Generator):</strong> ปรับความถี่ตั้งแต่ 100 Hz ถึง 20,000 Hz เพื่อทดสอบการตอบสนองของแมวแต่ละช่วงวัย (แมวสูงอายุอาจได้ยินความถี่เกิน 16 kHz ลดลง จึงควรใช้ย่าน 4–10 kHz แทน)
+              </div>
+            </div>
+
+            <div class="lab-control-grid">
+              <div class="lab-field">
+                <label for="lab-freq-slider">
+                  <span>ความถี่หลัก (Target Frequency)</span>
+                  <span id="lab-freq-display" class="tabular-nums">16,500 Hz</span>
+                </label>
+                <input id="lab-freq-slider" class="freq-range-input" type="range" min="100" max="20000" step="50" value="16500">
+                <div class="preset-Btn-row">
+                  <button type="button" class="preset-chip" data-lab-preset-hz="220">220Hz เคาะทุ้ม</button>
+                  <button type="button" class="preset-chip" data-lab-preset-hz="1200">1.2kHz ลูกแมว</button>
+                  <button type="button" class="preset-chip" data-lab-preset-hz="8000">8kHz หูแมวไวสุด</button>
+                  <button type="button" class="preset-chip" data-lab-preset-hz="15500">15.5kHz แหลมสูง</button>
+                  <button type="button" class="preset-chip" data-lab-preset-hz="18500">18.5kHz ขอบอัลตรา</button>
+                </div>
+              </div>
+
+              <div class="lab-field">
+                <label for="lab-waveform-select">รูปคลื่นเสียงและการมอดูเลต (Waveform &amp; Anti-Habituation)</label>
+                <div style="display:grid; gap:0.55rem;">
+                  <select id="lab-waveform-select" class="btn-secondary-action" style="width:100%;">
+                    <option value="sine">Sine Wave (คลื่นบริสุทธิ์ แหลมลึก)</option>
+                    <option value="triangle">Triangle Wave (คลื่นสามเหลี่ยม ฮาร์มอนิกนุ่ม)</option>
+                    <option value="sawtooth">Sawtooth Wave (คลื่นฟันเลื่อย แหลมคม)</option>
+                    <option value="square">Square Wave (คลื่นสี่เหลี่ยม เตือนภัยแรง)</option>
+                  </select>
+                  <select id="lab-modulation-select" class="btn-secondary-action" style="width:100%;">
+                    <option value="sweep">FM Sweep (กวาดความถี่ขึ้นลงกันชินเสียง)</option>
+                    <option value="strobe">Rapid Strobe (ตัดจังหวะรัวสั้นๆ)</option>
+                    <option value="random">Random Hopping (กระโดดความถี่สุ่ม)</option>
+                    <option value="static">Static Tone (ความถี่คงที่)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <button type="button" id="btn-play-manual-lab" class="btn-primary-sweep" style="width:100%;">
+                เปิดเครื่องกำเนิดความถี่กำหนดเอง
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: Interactive 4-Zone Vehicle Hazard Schematic & Neko Ban Ban Checklist -->
+      <aside class="panel-surface vehicle-inspector-panel" aria-labelledby="inspector-heading">
+        <div class="inspector-header">
+          <div>
+            <h2 id="inspector-heading" class="inspector-title">แผนผังจุดเสี่ยงแมวซ่อนในรถ 4 โซน</h2>
+            <p class="inspector-sub">แตะที่ส่วนต่างๆ ของรถเพื่อส่งเสียงเฉพาะจุดและประทับตราตรวจความปลอดภัยก่อนขับ</p>
+          </div>
+          <span id="clearance-counter-badge" class="clearance-counter-badge" data-all-clear="false">ตรวจแล้ว 0/4 โซน</span>
+        </div>
+
+        <!-- Authored SVG Top-Down Vehicle Hazard Blueprint -->
+        <div class="car-schematic-stage">
+          <svg class="car-svg-wrapper" viewBox="0 0 360 220" role="group" aria-label="แผนผังรถยนต์มุมมองด้านบนแสดงจุดเสี่ยงแมวซ่อน 4 โซน">
+            <!-- Garage floor grid lines -->
+            <line x1="15" y1="35" x2="345" y2="35" stroke="currentColor" stroke-opacity="0.1" stroke-width="1"/>
+            <line x1="15" y1="110" x2="345" y2="110" stroke="currentColor" stroke-opacity="0.1" stroke-width="1"/>
+            <line x1="15" y1="185" x2="345" y2="185" stroke="currentColor" stroke-opacity="0.1" stroke-width="1"/>
+
+            <!-- Car Chassis Silhouette -->
+            <rect x="36" y="42" width="288" height="136" rx="34" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="2.2"/>
+            <!-- Windshield & Cabin Roof -->
+            <path d="M126 54 L238 54 L254 166 L126 166 Z" fill="none" stroke="currentColor" stroke-opacity="0.28" stroke-width="1.5"/>
+
+            <!-- ZONE B: Front Wheel Wells (Top & Bottom Front Tires) -->
+            <g class="car-zone-hotspot" data-zone-hotspot="wheel-wells" data-selected="false" data-cleared="false" tabindex="0" role="button" aria-label="โซน B: ซุ้มล้อหน้าและบนหน้ายาง ความเสี่ยง 21%">
+              <rect class="zone-shape" x="72" y="24" width="58" height="22" rx="6" fill="rgba(120, 110, 96, 0.14)" stroke="#8C8273" stroke-width="1.5"/>
+              <rect class="zone-shape" x="72" y="174" width="58" height="22" rx="6" fill="rgba(120, 110, 96, 0.14)" stroke="#8C8273" stroke-width="1.5"/>
+              <text x="101" y="38" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="700" fill="currentColor">ZONE B</text>
+              <text x="101" y="188" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="700" fill="currentColor">ZONE B</text>
+            </g>
+
+            <!-- ZONE A: Engine Bay & Hood (Front Left) -->
+            <g class="car-zone-hotspot" data-zone-hotspot="engine-bay" data-selected="true" data-cleared="false" tabindex="0" role="button" aria-label="โซน A: ห้องเครื่องยนต์และสายพานหน้าเครื่อง ความเสี่ยงสูงสุด 62%">
+              <rect class="zone-shape" x="44" y="54" width="76" height="112" rx="18" fill="rgba(242, 100, 48, 0.30)" stroke="#F26430" stroke-width="2.5"/>
+              <text x="82" y="104" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="currentColor">ZONE A</text>
+              <text x="82" y="120" text-anchor="middle" font-family="Noto Sans Thai, sans-serif" font-size="10.5" font-weight="700" fill="currentColor">ห้องเครื่อง 62%</text>
+            </g>
+
+            <!-- ZONE C: Undercarriage & Catalytic Converter (Center Chassis) -->
+            <g class="car-zone-hotspot" data-zone-hotspot="undercarriage" data-selected="false" data-cleared="false" tabindex="0" role="button" aria-label="โซน C: ใต้ท้องรถและแคตตาไลติก ความเสี่ยง 11%">
+              <rect class="zone-shape" x="132" y="62" width="106" height="96" rx="10" fill="rgba(120, 110, 96, 0.14)" stroke="#8C8273" stroke-width="1.5"/>
+              <text x="185" y="105" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="currentColor">ZONE C</text>
+              <text x="185" y="121" text-anchor="middle" font-family="Noto Sans Thai, sans-serif" font-size="10.5" font-weight="700" fill="currentColor">ใต้ท้องรถ 11%</text>
+            </g>
+
+            <!-- ZONE D: Rear Exhaust & Rear Wheels -->
+            <g class="car-zone-hotspot" data-zone-hotspot="rear-exhaust" data-selected="false" data-cleared="false" tabindex="0" role="button" aria-label="โซน D: ล้อหลังและท่อพักไอเสีย ความเสี่ยง 6%">
+              <rect class="zone-shape" x="248" y="54" width="66" height="112" rx="16" fill="rgba(120, 110, 96, 0.14)" stroke="#8C8273" stroke-width="1.5"/>
+              <text x="281" y="105" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="currentColor">ZONE D</text>
+              <text x="281" y="121" text-anchor="middle" font-family="Noto Sans Thai, sans-serif" font-size="10" font-weight="700" fill="currentColor">ท่อไอเสีย 6%</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Selected Zone Recommendation & Action Drawer -->
+        <div class="zone-detail-drawer" aria-live="polite">
+          <div class="zone-detail-header">
+            <h3 id="zone-detail-name" class="zone-detail-name">ZONE A: ห้องเครื่องยนต์และสายพานหน้าเครื่อง</h3>
+            <span id="zone-detail-risk" class="zone-risk-pill">ความเสี่ยงสูงสุด 62%</span>
+          </div>
+          <p id="zone-detail-why" class="zone-detail-copy">
+            เสื้อสูบเก็บความอบอุ่น (35–50°C) ได้นาน 4–6 ชม. หลังดับเครื่อง ลูกแมวมักมุดจากช่องใต้กันชนหน้าขึ้นไปซุกใกล้สายพานหน้าเครื่อง — ห้ามบีบแตรไล่! ให้เคาะฝากระโปรง 3 ครั้ง (Neko Ban Ban)
+          </p>
+          <div class="zone-detail-actions">
+            <button type="button" id="btn-zone-play-recommended" class="btn-zone-sound">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              </svg>
+              <span id="zone-play-btn-text">ส่งเสียงเคาะเตือนปลุกห้องเครื่อง (75–380 Hz)</span>
+            </button>
+            <button type="button" id="btn-zone-toggle-stamp" class="btn-zone-stamp" data-cleared="false">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span id="zone-stamp-btn-text">ประทับตรา: ตรวจโซนนี้ปลอดภัยแล้ว</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4-Zone Sequential Stamp Stubs -->
+        <ul class="zone-checklist" aria-label="รายการตรวจเช็คจุดเสี่ยงรอบรถ 4 โซน">
+          <li class="zone-stub-item" data-zone-stub="engine-bay" data-selected="true" data-cleared="false">
+            <div class="zone-stub-left">
+              <span class="zone-code-tag">ZONE A</span>
+              <span class="zone-stub-title">เคาะฝากระโปรง &amp; เช็คห้องเครื่อง</span>
+            </div>
+            <span class="zone-stamp-status">รอตรวจเช็ค</span>
+          </li>
+          <li class="zone-stub-item" data-zone-stub="wheel-wells" data-selected="false" data-cleared="false">
+            <div class="zone-stub-left">
+              <span class="zone-code-tag">ZONE B</span>
+              <span class="zone-stub-title">ซุ้มล้อหน้า &amp; บนหน้ายางทั้ง 2 ฝั่ง</span>
+            </div>
+            <span class="zone-stamp-status">รอตรวจเช็ค</span>
+          </li>
+          <li class="zone-stub-item" data-zone-stub="undercarriage" data-selected="false" data-cleared="false">
+            <div class="zone-stub-left">
+              <span class="zone-code-tag">ZONE C</span>
+              <span class="zone-stub-title">ใต้ท้องรถ &amp; แคตตาไลติกคอนเวอร์เตอร์</span>
+            </div>
+            <span class="zone-stamp-status">รอตรวจเช็ค</span>
+          </li>
+          <li class="zone-stub-item" data-zone-stub="rear-exhaust" data-selected="false" data-cleared="false">
+            <div class="zone-stub-left">
+              <span class="zone-code-tag">ZONE D</span>
+              <span class="zone-stub-title">ซุ้มล้อหลัง &amp; ท่อพักไอเสีย</span>
+            </div>
+            <span class="zone-stamp-status">รอตรวจเช็ค</span>
+          </li>
+        </ul>
+
+        <div class="reset-check-row">
+          <span>สถานะการตรวจจะถูกบันทึกไว้ในเครื่องอัตโนมัติ</span>
+          <button type="button" id="btn-reset-zones" class="btn-text-reset">ล้างตราประทับเริ่มรอบใหม่</button>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Scientific Research & Feline Ethology Monograph Section -->
+  <section class="research-section" aria-labelledby="research-main-heading">
+    <div class="research-header">
+      <h2 id="research-main-heading" class="research-title">ข้อมูลวิจัยวิทยาศาสตร์: แมวกลัวเสียงอะไร และทำไมเสียงจากมือถือต้องออกแบบเฉพาะ?</h2>
+      <p class="research-intro">
+        สรุปผลการศึกษาด้านโสตประสาทของแมว (Heffner &amp; Heffner, 1985), พฤติกรรมศาสตร์สัตว์ตระกูลแมว (Feline Ethology), และแนวทางป้องกันอุบัติเหตุแมวติดใต้รถจากโครงการ Neko Ban Ban (猫バンバン) ของประเทศญี่ปุ่น
+      </p>
+    </div>
+
+    <div class="research-two-col">
+      <!-- Block 1: Feline vs Human Auditory Table & Smartphone Speaker Limits -->
+      <div class="research-block">
+        <h3 class="block-heading">เปรียบเทียบประสาทหูแมว vs มนุษย์ และขีดจำกัดลำโพงมือถือ</h3>
+        <div class="audiology-table-wrap">
+          <table class="audiology-table">
+            <thead>
+              <tr>
+                <th scope="col">พารามิเตอร์ทางเสียง</th>
+                <th scope="col">มนุษย์ (Human)</th>
+                <th scope="col">แมวบ้าน (Felis catus)</th>
+                <th scope="col">การประยุกต์ใช้ใน CattySafe</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>ช่วงความถี่ที่ได้ยิน</strong></td>
+                <td class="tabular-nums">20 Hz – 20 kHz</td>
+                <td class="tabular-nums"><strong>45 Hz – 64 kHz</strong> (สูงสุด ~79 kHz)</td>
+                <td>แมวได้ยินเสียงแหลมสูงกว่ามนุษย์ถึง 3.5 เท่า</td>
+              </tr>
+              <tr>
+                <td><strong>ย่านที่หูไวที่สุด</strong></td>
+                <td class="tabular-nums">1 kHz – 4 kHz</td>
+                <td class="tabular-nums"><strong>500 Hz – 32 kHz</strong> (จุดพีค 8 kHz)</td>
+                <td>เน้นส่งพลังงานคลื่นในช่วง 3.5 kHz – 19.5 kHz</td>
+              </tr>
+              <tr>
+                <td><strong>การขยายเสียงด้วยใบหู (Pinnae)</strong></td>
+                <td class="tabular-nums">+3 ถึง +5 dB</td>
+                <td class="tabular-nums"><strong>+8 ถึง +15 dB (ขยาย 2–3 เท่า)</strong></td>
+                <td>ใบหูรูปกรวยหมุนได้ 180° ขยายเสียงฟ่อและเสียงโลหะกระทบกันจนแมวทนไม่ได้</td>
+              </tr>
+              <tr>
+                <td><strong>ข้อจำกัดลำโพงสมาร์ทโฟน</strong></td>
+                <td colspan="2">วงจร DAC และลำโพงมือถือทั่วไปตัดสัญญาณเหนือ <strong>19.5 – 20 kHz</strong> ทิ้ง (ทำให้แอพที่อ้างว่าปล่อย 25 kHz ไม่มีเสียงออกจริง)</td>
+                <td>ใช้ <strong>Stochastic FM Sweep 13.5–19.5 kHz</strong> ซึ่งออกลำโพงมือถือจริง 100%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Block 2: The Engine Bay Paradox -->
+      <div class="research-block">
+        <h3 class="block-heading">ข้อควรระวังสำคัญ: "ไล่ออกจากใต้รถ" vs "ตกใจมุดลึกในห้องเครื่อง"</h3>
+        <p style="margin:0; font-size:0.9rem; color:var(--ink-secondary);">
+          รายงานของสมาคมยานยนต์ญี่ปุ่น (JAF) พบว่าแมวที่แอบซ่อนในรถมีพฤติกรรมตอบสนองต่อเสียงแตกต่างกันตามตำแหน่งที่ซ่อน:
+        </p>
+
+        <div class="paradox-comparison">
+          <div class="protocol-column">
+            <h4>1. แมวอยู่ใต้ท้องรถ / บนยางล้อ</h4>
+            <ul>
+              <li>มีทางหนีออกด้านข้างได้ 360 องศา</li>
+              <li><strong>วิธีที่ถูกต้อง:</strong> ใช้ <strong>โหมดเสียงไล่ (Deter Mode)</strong> เช่น คลื่นกวาด 13.5–19.5 kHz, เสียงแมวขู่ฟ่อ หรือเสียงเขย่าโลหะ</li>
+              <li>แมวจะผละออกจากใต้ท้องรถภายใน 5–15 วินาที</li>
+            </ul>
+            <div style="margin-top:0.75rem;">
+              <button type="button" class="btn-secondary-action" data-inline-play="feline-hiss" style="width:100%; justify-content:center;">
+                ฟังเสียงสังเคราะห์จริง
+              </button>
+            </div>
+          </div>
+
+          <div class="protocol-column coax-col">
+            <h4>2. แมวมุดอยู่ในห้องเครื่องยนต์ลึกๆ</h4>
+            <ul>
+              <li>ทางออกแคบและมืด หากบีบแตรหรือเปิดเสียงขู่ดังกะทันหัน ลูกแมวมัก <strong>ช็อกตัวแข็ง (Freeze)</strong> หรือมุดหนีลึกเข้าสายพานหน้าเครื่อง</li>
+              <li><strong>วิธีที่ถูกต้อง:</strong> เคาะฝากระโปรงเบาๆ 3 ครั้ง แล้ววางมือถือห่างหน้ารถ 1.5 เมตร เปิด <strong>โหมดเสียงล่อ (Coax Mode)</strong> เช่น เสียงลูกแมวร้องเรียกแม่ หรือเสียงเปิดกระป๋องอาหาร</li>
+            </ul>
+            <div style="margin-top:0.75rem;">
+              <button type="button" class="btn-secondary-action" data-inline-play="kitten-contact-call" style="width:100%; justify-content:center;">
+                ฟังเสียงสังเคราะห์จริง
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Under-Car High-Luminance Inspection Torch Dialog -->
+  <dialog id="inspection-torch-dialog" class="torch-dialog" aria-labelledby="torch-dialog-title">
+    <div class="torch-dialog-inner">
+      <div id="torch-lamp-surface" class="torch-lamp-box" data-strobe="false">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#11151A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+        </svg>
+        <p id="torch-dialog-title" style="font-family:var(--font-display); font-weight:700; font-size:1.15rem; margin:0.6rem 0 0.2rem; color:#11151A;">
+          ไฟส่องตรวจซุ้มล้อและใต้ท้องรถความสว่างสูง
+        </p>
+        <p style="margin:0; font-size:0.84rem; color:#4A453D;">
+          หันหน้าจอสีขาวสว่างนี้ส่องเข้าไปในซุ้มล้อหรือใต้ท้องรถพร้อมกดส่งคลื่นเสียงไล่แมว
+        </p>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:0.65rem; justify-content:center;">
+        <button type="button" id="btn-torch-trigger-sound" class="btn-primary-sweep" style="flex:1 1 200px; padding:0.75rem 1rem; font-size:0.95rem;">
+          <span id="torch-sound-btn-label">ปล่อยคลื่นความถี่สูงกวาด (13.5–19.5 kHz)</span>
+        </button>
+        <button type="button" id="btn-toggle-torch-strobe" class="btn-secondary-action" style="background:#EDF1F5; color:#0F172A;">
+          เปิดไฟกะพริบเตือน (Strobe)
+        </button>
+        <button type="button" id="btn-close-torch" class="btn-secondary-action" style="background:#DEE5ED; color:#0F172A;">
+          ปิดหน้าต่างไฟส่อง
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>CattySafe Bio-Acoustic Vehicle Pre-Drive Console</strong> · ออกแบบตามหลักโสตประสาทวิทยาของแมว (500 Hz – 32 kHz Peak) และแนวทาง Neko Ban Ban (猫バンバン)
+      </div>
+      <div>
+        ทำงานผ่าน Web Audio API สังเคราะห์เสียงสดในเบราว์เซอร์ 100% · รองรับการใช้งานแบบออฟไลน์ในลานจอดรถใต้ดิน
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

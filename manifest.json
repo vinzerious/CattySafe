@@ -1,0 +1,10 @@
+{
+  "name": "CattySafe — ระบบส่งคลื่นเสียงป้องกันแมวติดใต้ท้องรถและห้องเครื่อง",
+  "short_name": "CattySafe",
+  "description": "ระบบสังเคราะห์คลื่นเสียงไล่แมวใต้ท้องรถ ล่อแมวออกจากห้องเครื่อง และเช็คลิสต์ Neko Ban Ban 4 จุดก่อนสตาร์ทรถ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#EDF1F5",
+  "theme_color": "#C23B13",
+  "lang": "th-TH"
+}

@@ -1,11 +1,11 @@
 /**
- * CattySafe Bio-Acoustic Engine (Web Audio API Procedural Synthesizer)
+ * PaiPai-ChewChew Bio-Acoustic Engine (Web Audio API Procedural Synthesizer)
  *
  * Designed around two real-world constraints:
- * 1. Feline auditory sensitivity peaks between 500 Hz and 32 kHz, with 2-3x pinnae amplification
- *    between 2 kHz and 16 kHz.
+ * 1. Feline & canine auditory sensitivity (peaks between 500 Hz - 32 kHz for cats, 500 Hz - 16 kHz for dogs)
+ *    with pinnae amplification in critical deterrence and alerting bands.
  * 2. Smartphone DACs and micro-speakers roll off sharply above 18-20 kHz, meaning "25 kHz" static
- *    apps produce near-silence. CattySafe targets the 13.5 kHz - 19.5 kHz deliverable ceiling paired
+ *    apps produce near-silence. PaiPai-ChewChew targets the 12.0 kHz - 19.5 kHz deliverable ceiling paired
  *    with broadband 3 kHz - 12 kHz sibilant transients and 70 Hz - 2.8 kHz predator/knock harmonics.
  */
 
@@ -400,7 +400,7 @@ export const DOG_SMART_SWEEP_STAGES = [
   }
 ];
 
-export class CattyAcousticEngine {
+export class PaiPaiAcousticEngine {
   constructor() {
     this.ctx = null;
     this.masterGain = null;
@@ -1448,3 +1448,5 @@ export class CattyAcousticEngine {
     return true;
   }
 }
+
+export { PaiPaiAcousticEngine as CattyAcousticEngine };

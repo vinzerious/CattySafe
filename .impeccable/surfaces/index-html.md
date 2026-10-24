@@ -15,7 +15,7 @@ Primary operating console for drivers standing beside a parked vehicle (in a dim
 
 ## Direction contract
 
-THESIS: CattySafe is a working bio-acoustic vehicle safety instrument and Neko Ban Ban pre-drive console—refusing both fake "25 kHz ultrasonic" novelty sliders and cute pet-toy card grids by putting a live 20-second Multi-Stage Pre-Drive Acoustic Sweep, an interactive 4-zone vehicle hazard schematic, and a Feline vs. Human Audiogram spectrum right in the first viewport.
+THESIS: PaiPai-ChewChew is a working bio-acoustic vehicle safety instrument and Neko Ban Ban pre-drive console—refusing both fake "25 kHz ultrasonic" novelty sliders and cute pet-toy card grids by putting a live 20-second Multi-Stage Pre-Drive Acoustic Sweep, an interactive 4-zone vehicle hazard schematic, and a Feline vs. Human Audiogram spectrum right in the first viewport.
 
 OWN-WORLD: Veterinary Audiology & Neko Ban Ban Field Console. Cool Automotive Technical Slate-Mist (`#EDF1F5`) in daylight and deep garage-asphalt (`#11151A`) in low light, structured by 1px structural hairlines (`#CBD5E1` / `#28303B`), anchored by Highway Safety Vermilion-Amber (`#C23B13`) for Deter/Flush actions, Signal Cobalt (`#1554C0`) for Coax/Lure reversal, and Clearance Emerald (`#0D6B49`) for stamped vehicle zone checks. Typography pairs Cadson Demak's geometric Thai/Latin `Bai Jamjuree` for headers and controls with `Noto Sans Thai` for dense ethological copy and `JetBrains Mono` for live Hz, dB, and timer readouts.
 - Raise from `variable-font-specimen`: Continuous real-time parameter binding—live frequency/modulation changes drive the feline audiogram cursor, canvas waveform/spectrum, and Hz telemetry without lag.

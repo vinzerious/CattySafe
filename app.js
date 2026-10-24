@@ -1,8 +1,8 @@
 /**
- * CattySafe — Main Application Controller & Interactive Canvas Telemetry
+ * PaiPai-ChewChew — Main Application Controller & Interactive Canvas Telemetry
  */
 
-import { CattyAcousticEngine, SOUND_PROFILES, SMART_SWEEP_STAGES, DOG_SMART_SWEEP_STAGES } from './audio-engine.js';
+import { PaiPaiAcousticEngine, CattyAcousticEngine, SOUND_PROFILES, SMART_SWEEP_STAGES, DOG_SMART_SWEEP_STAGES } from './audio-engine.js';
 
 export const VEHICLE_ZONES = {
   'engine-bay': {
@@ -106,14 +106,19 @@ export const DOG_VEHICLE_ZONES = {
   }
 };
 
-const STORAGE_KEY_CLEARED = 'cattysafe_cleared_zones_v1';
-const STORAGE_KEY_THEME = 'cattysafe_theme_v1';
-const STORAGE_KEY_SPECIES = 'cattysafe_species_v1';
-const STORAGE_KEY_TORCH_DEVICE = 'cattysafe_torch_device_id_v1';
+const STORAGE_KEY_CLEARED = 'paipai_cleared_zones_v1';
+const STORAGE_KEY_THEME = 'paipai_theme_v1';
+const STORAGE_KEY_SPECIES = 'paipai_species_v1';
+const STORAGE_KEY_TORCH_DEVICE = 'paipai_torch_device_id_v1';
 
-class CattySafeApp {
+const LEGACY_STORAGE_KEY_CLEARED = 'cattysafe_cleared_zones_v1';
+const LEGACY_STORAGE_KEY_THEME = 'cattysafe_theme_v1';
+const LEGACY_STORAGE_KEY_SPECIES = 'cattysafe_species_v1';
+const LEGACY_STORAGE_KEY_TORCH_DEVICE = 'cattysafe_torch_device_id_v1';
+
+class PaiPaiChewChewApp {
   constructor() {
-    this.engine = new CattyAcousticEngine();
+    this.engine = new PaiPaiAcousticEngine();
     this.species = this.loadSpecies(); // 'cat' | 'dog'
     this.selectedZoneId = 'engine-bay';
     this.clearedZones = this.loadClearedZones();
@@ -149,7 +154,7 @@ class CattySafeApp {
 
   loadSpecies() {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_SPECIES);
+      const saved = localStorage.getItem(STORAGE_KEY_SPECIES) || localStorage.getItem(LEGACY_STORAGE_KEY_SPECIES);
       return saved === 'dog' ? 'dog' : 'cat';
     } catch (_) {
       return 'cat';
@@ -168,7 +173,7 @@ class CattySafeApp {
 
   loadClearedZones() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_CLEARED);
+      const raw = localStorage.getItem(STORAGE_KEY_CLEARED) || localStorage.getItem(LEGACY_STORAGE_KEY_CLEARED);
       if (!raw) return {};
       return JSON.parse(raw);
     } catch (_) {
@@ -345,7 +350,7 @@ class CattySafeApp {
     const switchEl = document.getElementById('garage-night-switch');
     let saved = null;
     try {
-      saved = localStorage.getItem(STORAGE_KEY_THEME);
+      saved = localStorage.getItem(STORAGE_KEY_THEME) || localStorage.getItem(LEGACY_STORAGE_KEY_THEME);
     } catch (_) {}
 
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -1588,7 +1593,7 @@ class CattySafeApp {
     let savedDeviceId = null;
     if (!forceFullScan) {
       try {
-        savedDeviceId = localStorage.getItem(STORAGE_KEY_TORCH_DEVICE);
+        savedDeviceId = localStorage.getItem(STORAGE_KEY_TORCH_DEVICE) || localStorage.getItem(LEGACY_STORAGE_KEY_TORCH_DEVICE);
       } catch (_) {}
     }
 
@@ -2038,10 +2043,12 @@ class CattySafeApp {
   }
 }
 
+const CattySafeApp = PaiPaiChewChewApp;
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    window.cattySafeApp = new CattySafeApp();
+    window.paipaiChewChewApp = window.cattySafeApp = new PaiPaiChewChewApp();
   });
 } else {
-  window.cattySafeApp = new CattySafeApp();
+  window.paipaiChewChewApp = window.cattySafeApp = new PaiPaiChewChewApp();
 }

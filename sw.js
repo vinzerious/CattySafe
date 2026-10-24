@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cattysafe-pwa-v2';
+const CACHE_NAME = 'paipai-chewchew-pwa-v1';
 const ASSETS = [
   './',
   './index.html',

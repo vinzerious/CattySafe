@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-10-24T15:26:30+07:00",
-  "title": "Design System: CattySafe",
+  "title": "Design System: PaiPai-ChewChew",
   "extensions": {
     "colorMeta": {
       "deter-primary": {
@@ -103,7 +103,7 @@
   ],
   "narrative": {
     "northStar": "Veterinary Audiology & Neko Ban Ban Field Console",
-    "overview": "CattySafe is an operational bio-acoustic instrument built for drivers standing beside a parked vehicle in a carport, street, or dim underground garage. Its visual system draws from Japanese Neko Ban Ban automotive inspection protocols and veterinary audiology field instruments.",
+    "overview": "PaiPai-ChewChew is an operational bio-acoustic instrument built for drivers standing beside a parked vehicle in a carport, street, or dim underground garage. Its visual system draws from Japanese Neko Ban Ban automotive inspection protocols and veterinary audiology field instruments.",
     "keyCharacteristics": [
       "Dual-Environment Day/Night Garage Polarity (#EDF1F5 daylight slate-mist / #11151A night asphalt)",
       "Tri-Role Semantic Action Coding (Vermilion for Deter, Cobalt for Coax, Emerald for Cleared)",

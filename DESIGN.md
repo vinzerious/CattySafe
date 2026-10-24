@@ -1,5 +1,5 @@
 ---
-name: CattySafe
+name: PaiPai-ChewChew
 description: Bio-acoustic pre-drive vehicle safety console and Neko Ban Ban feline inspection system
 colors:
   deter-primary: "#C23B13"
@@ -75,13 +75,13 @@ components:
     padding: "22px 24px"
 ---
 
-# Design System: CattySafe
+# Design System: PaiPai-ChewChew
 
 ## Overview
 
 **Creative North Star: "Veterinary Audiology & Neko Ban Ban Field Console"**
 
-CattySafe is an operational bio-acoustic instrument built for drivers standing beside a parked vehicle in a carport, street, or dim underground garage. Its visual system draws from Japanese *Neko Ban Ban* (猫バンバン) automotive inspection protocols and veterinary audiology field instruments. Rather than treating sound deterrence as a novelty soundboard or a pastel pet toy, the interface presents a disciplined two-column engineering workbench: an automated 20-second multi-stage acoustic sweep paired with a real-time Feline vs. Human Audiogram canvas on the left, and a top-down 4-zone automotive hazard blueprint with sequential clearance stamps on the right.
+PaiPai-ChewChew is an operational bio-acoustic instrument built for drivers standing beside a parked vehicle in a carport, street, or dim underground garage. Its visual system draws from Japanese *Neko Ban Ban* (猫バンバン) automotive inspection protocols and veterinary audiology field instruments. Rather than treating sound deterrence as a novelty soundboard or a pastel pet toy, the interface presents a disciplined two-column engineering workbench: an automated 20-second multi-stage acoustic sweep paired with a real-time Feline vs. Human Audiogram canvas on the left, and a top-down 4-zone automotive hazard blueprint with sequential clearance stamps on the right.
 
 Density is calibrated for one-handed curbside urgency. Primary controls sit immediately in the first viewport, framed by crisp 1px structural hairlines (`#CBD5E1` in daylight, `#28303B` in garage night mode) and high-contrast 3:1 control borders (`#5B6B82`). Color is strictly semantic—distinguishing between **Deter/Flush** (Highway Safety Vermilion), **Coax/Lure** (Signal Cobalt for rescuing frozen kittens inside engine bays), and **Cleared/Safe** (Clearance Emerald).
 

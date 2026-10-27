@@ -71,6 +71,21 @@
           <span>ไฟส่องซุ้มล้อ/ใต้รถ</span>
         </button>
 
+        <div id="wake-lock-control" class="wake-lock-control" data-lock-state="armed">
+          <button type="button" id="btn-toggle-wake-lock" class="wake-lock-btn" aria-pressed="true" aria-describedby="wake-lock-status" aria-label="จอไม่ดับ" title="ปิดการตรึงหน้าจอ">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="12" rx="2"/>
+              <path d="M8 20h8"/>
+              <path d="M12 16v4"/>
+              <path d="M12 7v3"/>
+              <path d="M12 12h.01"/>
+            </svg>
+            <span class="wake-lock-label">จอไม่ดับ</span>
+            <span class="wake-lock-dot" aria-hidden="true"></span>
+          </button>
+          <span id="wake-lock-status" class="wake-lock-status" role="status" aria-live="polite">พร้อมตรึงหน้าจอ</span>
+        </div>
+
         <label class="theme-switch-label" for="garage-night-switch">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>

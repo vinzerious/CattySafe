@@ -1190,10 +1190,52 @@ input[type="checkbox"][switch]:focus-visible {
 
 .inspector-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.9rem;
+}
+
+.inspector-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.share-result-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  color: var(--ink-primary);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.share-result-btn:hover:not(:disabled) {
+  background-color: var(--bg-subtle-tint);
+}
+
+.share-result-btn[data-complete="true"] {
+  border-color: var(--safe-primary);
+  background-color: var(--safe-surface);
+  color: var(--safe-primary);
+}
+
+.share-result-btn:disabled {
+  background-color: var(--bg-recessed);
+  color: var(--ink-secondary);
+  border-style: dashed;
+  cursor: not-allowed;
 }
 
 .inspector-title {
@@ -1896,6 +1938,274 @@ input[type="checkbox"][switch]:focus-visible {
   .rescue-sound-card .btn-sound-play {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   Shareable Pre-Drive Inspection Result
+   ========================================================================== */
+
+.result-dialog {
+  width: min(92vw, 460px);
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-surface);
+  color: var(--ink-primary);
+  box-shadow: var(--shadow-elevated);
+  overflow: auto;
+}
+
+.result-dialog::backdrop {
+  background-color: rgba(15, 23, 42, 0.58);
+}
+
+.result-dialog-inner {
+  padding: 1.1rem 1.15rem 1.2rem;
+}
+
+.result-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.result-dialog-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.result-card {
+  padding: 0.9rem 0.95rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+}
+
+.result-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.result-brand svg {
+  width: 34px;
+  height: 34px;
+  padding: 0.3rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--deter-primary);
+  color: var(--deter-on);
+  flex-shrink: 0;
+}
+
+.result-brand-name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.result-brand-sub {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+}
+
+.result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.result-species-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-recessed);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.result-generated-at {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-secondary);
+}
+
+.result-completeness-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.65rem;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-recessed);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.result-completeness-badge[data-complete="true"] {
+  border-color: var(--safe-primary);
+  background-color: var(--safe-surface);
+  color: var(--safe-primary);
+}
+
+.result-zone-list {
+  display: grid;
+  gap: 0.38rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result-zone-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+}
+
+.result-zone-row[data-cleared="true"] {
+  border-color: var(--safe-border);
+  background-color: var(--safe-surface);
+}
+
+.result-zone-code {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.result-zone-name {
+  flex: 1 1 100px;
+  min-width: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--ink-primary);
+}
+
+.result-zone-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.result-zone-row[data-cleared="true"] .result-zone-status {
+  color: var(--safe-primary);
+}
+
+.result-disclaimer {
+  margin: 0.75rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-hairline);
+  font-size: 0.71rem;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.result-share-btn {
+  flex: 1 1 190px;
+  min-width: 0;
+  padding: 0.72rem 1rem;
+  font-size: 0.92rem;
+  box-shadow: none;
+}
+
+.result-actions .btn-secondary-action {
+  flex: 1 1 150px;
+  justify-content: center;
+}
+
+.result-status {
+  min-height: 1.2em;
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+.result-fallback {
+  margin-top: 0.65rem;
+}
+
+.result-fallback[hidden] {
+  display: none !important;
+}
+
+.result-fallback label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+.result-share-text {
+  width: 100%;
+  resize: vertical;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-recessed);
+  color: var(--ink-primary);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .result-dialog {
+    width: calc(100vw - 1.25rem);
+    max-height: calc(100dvh - 1.25rem);
+  }
+
+  .result-dialog-inner {
+    padding: 0.9rem 0.85rem 1rem;
+  }
+
+  .result-actions {
+    flex-direction: column;
+  }
+
+  .result-actions > button {
+    width: 100%;
+    flex: 0 0 auto;
   }
 }
 

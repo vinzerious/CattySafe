@@ -886,7 +886,19 @@
             <h2 id="inspector-heading" class="inspector-title">แผนผังจุดเสี่ยงแมวซ่อนในรถ 4 โซน</h2>
             <p class="inspector-sub">แตะที่ส่วนต่างๆ ของรถเพื่อส่งเสียงเฉพาะจุดและประทับตราตรวจความปลอดภัยก่อนขับ</p>
           </div>
-          <span id="clearance-counter-badge" class="clearance-counter-badge" data-all-clear="false">ตรวจแล้ว 0/4 โซน</span>
+          <div class="inspector-header-actions">
+            <span id="clearance-counter-badge" class="clearance-counter-badge" data-all-clear="false">ตรวจแล้ว 0/4 โซน</span>
+            <button type="button" id="btn-open-result" class="share-result-btn" disabled aria-disabled="true" title="ประทับตราอย่างน้อย 1 โซนก่อนแชร์">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="18" cy="5" r="3"/>
+                <circle cx="6" cy="12" r="3"/>
+                <circle cx="18" cy="19" r="3"/>
+                <path d="m8.59 13.51 6.83 3.98"/>
+                <path d="m15.41 6.51-6.82 3.98"/>
+              </svg>
+              <span>แชร์ผลตรวจ</span>
+            </button>
+          </div>
         </div>
 
         <!-- Authored SVG Top-Down Vehicle Hazard Blueprint -->
@@ -1183,6 +1195,55 @@
         <button type="button" id="btn-close-torch" class="btn-secondary-action" style="background:#DEE5ED; color:#0F172A;">
           ปิดหน้าต่างไฟส่อง
         </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Shareable Pre-Drive Inspection Result -->
+  <dialog id="inspection-result-dialog" class="result-dialog" closedby="any" aria-labelledby="result-dialog-title" aria-describedby="result-disclaimer">
+    <div class="result-dialog-inner">
+      <header class="result-dialog-header">
+        <h2 id="result-dialog-title" class="result-dialog-title" tabindex="-1">ผลตรวจก่อนขับ</h2>
+        <button type="button" id="btn-close-result" class="btn-text-reset">ปิด</button>
+      </header>
+
+      <p id="result-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
+
+      <div class="result-card">
+        <div class="result-brand">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11V6l3.5 2.5a7.5 7.5 0 0 1 9 0L20 6v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10Z"/>
+            <circle cx="9.5" cy="11.5" r="1"/>
+            <circle cx="14.5" cy="11.5" r="1"/>
+            <path d="M10 14.5c.7.6 1.3.8 2 .8s1.3-.2 2-.8"/>
+          </svg>
+          <div>
+            <strong class="result-brand-name">PaiPai-ChewChew</strong>
+            <span class="result-brand-sub">ผลตรวจก่อนขับ</span>
+          </div>
+        </div>
+
+        <div class="result-meta">
+          <span id="result-species-badge" class="result-species-badge">โหมดแมว</span>
+          <span id="result-generated-at" class="result-generated-at tabular-nums">ข้อมูล ณ --/--/---- --:--</span>
+        </div>
+
+        <div id="result-completeness-badge" class="result-completeness-badge" data-complete="false">ตรวจแล้ว 0/4 โซน</div>
+        <ul id="result-zone-list" class="result-zone-list"></ul>
+
+        <p id="result-disclaimer" class="result-disclaimer">ผลนี้สร้างจากตราประทับในเครื่อง ไม่ใช่การรับรองความปลอดภัย — โปรดตรวจด้วยสายตาก่อนสตาร์ทเครื่อง</p>
+      </div>
+
+      <div class="result-actions">
+        <button type="button" id="btn-share-result" class="btn-primary-sweep result-share-btn">แชร์ผลตรวจ</button>
+        <button type="button" id="btn-copy-result" class="btn-secondary-action">คัดลอกข้อความ</button>
+      </div>
+
+      <p id="result-status" class="result-status" role="status" aria-live="polite"></p>
+
+      <div id="result-fallback" class="result-fallback" hidden>
+        <label for="result-share-text">คัดลอกข้อความด้านล่างด้วยตนเอง</label>
+        <textarea id="result-share-text" class="result-share-text" readonly rows="10" spellcheck="false"></textarea>
       </div>
     </div>
   </dialog>

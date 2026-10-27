@@ -176,6 +176,10 @@ class PaiPaiChewChewApp {
       helpReturnIndex: 0
     };
 
+    // Shareable inspection result state
+    this.resultSnapshot = null;
+    this.resultText = '';
+
     this.init();
   }
 
@@ -224,6 +228,7 @@ class PaiPaiChewChewApp {
     this.bindSoundProfileButtons();
     this.bindVehicleInspector();
     this.bindRescueFlow();
+    this.bindResultDialog();
     this.bindMicListener();
     this.bindManualLab();
     this.bindResearchInlinePlayButtons();
@@ -1677,7 +1682,8 @@ class PaiPaiChewChewApp {
   renderZoneInspector() {
     const zoneMap = this.getActiveZoneMap();
     const zone = zoneMap[this.selectedZoneId] || zoneMap['engine-bay'];
-    const isCleared = Boolean(this.clearedZones[zone.id]);
+    const currentStamp = this.readZoneStamp(zone.id);
+    const isCleared = Boolean(currentStamp);
 
     const nameEl = document.getElementById('zone-detail-name');
     const riskEl = document.getElementById('zone-detail-risk');
@@ -1697,7 +1703,7 @@ class PaiPaiChewChewApp {
     if (stampBtn && stampBtnText) {
       stampBtn.setAttribute('data-cleared', isCleared ? 'true' : 'false');
       stampBtnText.textContent = isCleared
-        ? `ยืนยันปลอดภัยแล้ว (${this.clearedZones[zone.id]})`
+        ? `ยืนยันปลอดภัยแล้ว (${currentStamp})`
         : 'ประทับตรา: ตรวจโซนนี้ปลอดภัยแล้ว';
     }
 
@@ -1705,7 +1711,7 @@ class PaiPaiChewChewApp {
     document.querySelectorAll('[data-zone-hotspot]').forEach((spot) => {
       const zId = spot.getAttribute('data-zone-hotspot');
       const selected = zId === this.selectedZoneId;
-      const cleared = Boolean(this.clearedZones[zId]);
+      const cleared = Boolean(this.readZoneStamp(zId));
       spot.setAttribute('data-selected', selected ? 'true' : 'false');
       spot.setAttribute('data-cleared', cleared ? 'true' : 'false');
 
@@ -1730,7 +1736,7 @@ class PaiPaiChewChewApp {
     document.querySelectorAll('[data-zone-stub]').forEach((item) => {
       const zId = item.getAttribute('data-zone-stub');
       const selected = zId === this.selectedZoneId;
-      const timeStr = this.clearedZones[zId];
+      const timeStr = this.readZoneStamp(zId);
       const cleared = Boolean(timeStr);
       if (cleared) clearedCount++;
 
@@ -1748,6 +1754,263 @@ class PaiPaiChewChewApp {
       counterBadge.textContent = `ตรวจแล้ว ${clearedCount}/4 โซน`;
       counterBadge.setAttribute('data-all-clear', clearedCount === 4 ? 'true' : 'false');
     }
+
+    const shareResultBtn = document.getElementById('btn-open-result');
+    if (shareResultBtn) {
+      const hasAny = clearedCount > 0;
+      shareResultBtn.disabled = !hasAny;
+      shareResultBtn.setAttribute('aria-disabled', hasAny ? 'false' : 'true');
+      shareResultBtn.setAttribute('data-complete', clearedCount === 4 ? 'true' : 'false');
+      shareResultBtn.title = hasAny
+        ? 'แชร์ผลตรวจก่อนขับ'
+        : 'ประทับตราอย่างน้อย 1 โซนก่อนแชร์';
+    }
+  }
+
+  // =========================================================================
+  // SHAREABLE INSPECTION RESULT
+  // =========================================================================
+
+  bindResultDialog() {
+    const openBtn = document.getElementById('btn-open-result');
+    if (openBtn) openBtn.addEventListener('click', () => this.openResultDialog());
+
+    const closeBtn = document.getElementById('btn-close-result');
+    if (closeBtn) closeBtn.addEventListener('click', () => this.closeResultDialog());
+
+    const shareBtn = document.getElementById('btn-share-result');
+    if (shareBtn) shareBtn.addEventListener('click', () => this.shareResult());
+
+    const copyBtn = document.getElementById('btn-copy-result');
+    if (copyBtn) copyBtn.addEventListener('click', () => this.copyResultText(this.resultText, false));
+
+    const dialog = document.getElementById('inspection-result-dialog');
+    if (!dialog) return;
+
+    dialog.addEventListener('close', () => this.focusResultTrigger());
+    dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      this.closeResultDialog();
+    });
+
+    dialog.addEventListener('click', (event) => {
+      if (event.target !== dialog) return;
+      const rect = dialog.getBoundingClientRect();
+      const isContent = (
+        rect.top <= event.clientY &&
+        event.clientY <= rect.top + rect.height &&
+        rect.left <= event.clientX &&
+        event.clientX <= rect.left + rect.width
+      );
+      if (isContent) return;
+      this.closeResultDialog();
+    });
+  }
+
+  readZoneStamp(zoneId) {
+    const raw = this.clearedZones[zoneId];
+    return typeof raw === 'string' && raw.trim() !== '' ? raw : null;
+  }
+
+  formatResultTimestamp(date = new Date()) {
+    const pad = (value) => String(value).padStart(2, '0');
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  getResultZoneRows() {
+    const order = ['engine-bay', 'wheel-wells', 'undercarriage', 'rear-exhaust'];
+    const zoneMap = this.getActiveZoneMap();
+    return order.map((zoneId) => {
+      const zone = zoneMap[zoneId];
+      return {
+        id: zoneId,
+        code: zone ? zone.code : '',
+        nameTh: zone ? zone.nameTh : '',
+        stamp: this.readZoneStamp(zoneId)
+      };
+    });
+  }
+
+  openResultDialog() {
+    const rows = this.getResultZoneRows();
+    const count = rows.filter((row) => row.stamp).length;
+    if (!count) return;
+
+    this.resultSnapshot = {
+      generatedAt: this.formatResultTimestamp(),
+      species: this.species,
+      zones: rows,
+      count
+    };
+    this.resultText = this.buildResultText(this.resultSnapshot);
+    this.renderResultCard(this.resultSnapshot);
+    this.setResultStatus('');
+    this.hideResultFallback();
+
+    const dialog = document.getElementById('inspection-result-dialog');
+    if (!dialog) return;
+
+    const announcement = document.getElementById('result-announcement');
+    if (announcement) announcement.textContent = '';
+
+    if (typeof dialog.showModal === 'function') {
+      if (!dialog.open) dialog.showModal();
+    } else {
+      dialog.setAttribute('open', '');
+    }
+
+    const heading = document.getElementById('result-dialog-title');
+    if (heading) heading.focus();
+
+    if (announcement) {
+      announcement.textContent = count === 4
+        ? 'ตรวจครบ 4/4 โซน'
+        : `ตรวจแล้ว ${count}/4 โซน`;
+    }
+  }
+
+  renderResultCard(snapshot) {
+    const species = document.getElementById('result-species-badge');
+    if (species) {
+      species.textContent = snapshot.species === 'dog' ? 'โหมดสุนัข' : 'โหมดแมว';
+    }
+
+    const generatedAt = document.getElementById('result-generated-at');
+    if (generatedAt) {
+      generatedAt.textContent = `ข้อมูล ณ ${snapshot.generatedAt}`;
+    }
+
+    const completeness = document.getElementById('result-completeness-badge');
+    if (completeness) {
+      const isComplete = snapshot.count === 4;
+      completeness.textContent = isComplete
+        ? 'ตรวจครบ 4/4 โซน'
+        : `ตรวจแล้ว ${snapshot.count}/4 โซน`;
+      completeness.setAttribute('data-complete', isComplete ? 'true' : 'false');
+    }
+
+    const list = document.getElementById('result-zone-list');
+    if (list) {
+      list.innerHTML = snapshot.zones.map((zone) => `
+        <li class="result-zone-row" data-cleared="${zone.stamp ? 'true' : 'false'}">
+          <span class="result-zone-code">${this.escapeResultHtml(zone.code)}</span>
+          <span class="result-zone-name">${this.escapeResultHtml(zone.nameTh)}</span>
+          <span class="result-zone-status">
+            <span aria-hidden="true">${zone.stamp ? '✓' : '○'}</span>
+            <span>${zone.stamp ? this.escapeResultHtml(zone.stamp) : 'ยังไม่ตรวจ'}</span>
+          </span>
+        </li>`).join('');
+    }
+  }
+
+  buildResultText(snapshot) {
+    const speciesLabel = snapshot.species === 'dog' ? 'โหมดสุนัข' : 'โหมดแมว';
+    const completeness = snapshot.count === 4
+      ? 'ตรวจครบ 4/4 โซน'
+      : `ตรวจแล้ว ${snapshot.count}/4 โซน (ยังไม่ครบ)`;
+    const rows = snapshot.zones.map((zone) => (
+      zone.stamp
+        ? `✓ ${zone.code} ${zone.nameTh} — ${zone.stamp}`
+        : `○ ${zone.code} ${zone.nameTh} — ยังไม่ตรวจ`
+    )).join('\n');
+
+    return [
+      'PaiPai-ChewChew · ผลตรวจก่อนขับ',
+      `${speciesLabel} · ข้อมูล ณ ${snapshot.generatedAt}`,
+      completeness,
+      '',
+      rows,
+      '',
+      'ผลนี้สร้างจากตราประทับในเครื่อง ไม่ใช่การรับรองความปลอดภัย — โปรดตรวจด้วยสายตาก่อนสตาร์ทเครื่อง'
+    ].join('\n');
+  }
+
+  escapeResultHtml(value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[character]));
+  }
+
+  async shareResult() {
+    if (!this.resultText) return;
+    const text = this.resultText;
+
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'ผลตรวจก่อนขับ · PaiPai-ChewChew', text });
+        this.setResultStatus('แชร์ผลตรวจแล้ว');
+        return;
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+      }
+      await this.copyResultText(text, true);
+      return;
+    }
+
+    await this.copyResultText(text, false);
+  }
+
+  async copyResultText(text, fromShare = false) {
+    const value = text || this.resultText;
+    if (!value) return;
+
+    try {
+      if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+        throw new Error('clipboard unavailable');
+      }
+      await navigator.clipboard.writeText(value);
+      this.setResultStatus(fromShare ? 'แชร์ไม่สำเร็จ — คัดลอกข้อความแทน' : 'คัดลอกผลตรวจแล้ว');
+    } catch (_) {
+      this.showResultFallback(value);
+      this.setResultStatus('คัดลอกอัตโนมัติไม่สำเร็จ — เลือกข้อความด้านล่างเพื่อคัดลอก');
+    }
+  }
+
+  showResultFallback(text) {
+    const wrap = document.getElementById('result-fallback');
+    const area = document.getElementById('result-share-text');
+    if (!wrap || !area) return;
+    wrap.hidden = false;
+    area.value = text;
+    area.focus();
+    area.select();
+  }
+
+  hideResultFallback() {
+    const wrap = document.getElementById('result-fallback');
+    const area = document.getElementById('result-share-text');
+    if (wrap) wrap.hidden = true;
+    if (area) area.value = '';
+  }
+
+  setResultStatus(text) {
+    const status = document.getElementById('result-status');
+    if (status) status.textContent = text || '';
+  }
+
+  closeResultDialog() {
+    const dialog = document.getElementById('inspection-result-dialog');
+    if (!dialog || !dialog.open) return;
+    if (typeof dialog.close === 'function') {
+      dialog.close();
+    } else {
+      dialog.removeAttribute('open');
+    }
+    this.focusResultTrigger();
+  }
+
+  focusResultTrigger() {
+    setTimeout(() => {
+      const trigger = document.getElementById('btn-open-result');
+      const dialog = document.getElementById('inspection-result-dialog');
+      if (trigger && !trigger.disabled && dialog && !dialog.open) {
+        trigger.focus();
+      }
+    }, 50);
   }
 
   renderAudioStatus(status) {

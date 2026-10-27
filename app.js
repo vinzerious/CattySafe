@@ -110,6 +110,7 @@ const STORAGE_KEY_CLEARED = 'paipai_cleared_zones_v1';
 const STORAGE_KEY_THEME = 'paipai_theme_v1';
 const STORAGE_KEY_SPECIES = 'paipai_species_v1';
 const STORAGE_KEY_TORCH_DEVICE = 'paipai_torch_device_id_v1';
+const STORAGE_KEY_WAKE_LOCK = 'paipai_wake_lock_v1';
 
 const LEGACY_STORAGE_KEY_CLEARED = 'cattysafe_cleared_zones_v1';
 const LEGACY_STORAGE_KEY_THEME = 'cattysafe_theme_v1';
@@ -148,6 +149,17 @@ class PaiPaiChewChewApp {
     this.activeTorchDeviceId = null;
     this.torchNightBoost = true;
     this.torchZoomLevel = 1;
+
+    // Screen Wake Lock state
+    this.wakeLockEnabled = this.loadWakeLockPreference();
+    this.wakeLockSentinel = null;
+    this.wakeLockState = 'armed';
+    this.wakeLockReason = null;
+    this.wakeLockRequesting = false;
+    this.wakeLockReleaseTarget = null;
+    this.wakeLockEverHeld = false;
+    this.wakeLockFirstGestureHandler = null;
+    this.wakeLockRetryHandler = null;
 
     this.init();
   }
@@ -191,6 +203,7 @@ class PaiPaiChewChewApp {
     this.initTheme();
     this.bindSpeciesToggle();
     this.bindTopControls();
+    this.initWakeLock();
     this.bindSmartSweepControls();
     this.bindModeTabs();
     this.bindSoundProfileButtons();
@@ -379,6 +392,295 @@ class PaiPaiChewChewApp {
         if (volValue) volValue.textContent = `${pct}%`;
       });
     }
+  }
+
+  // =========================================================================
+  // SCREEN WAKE LOCK
+  // =========================================================================
+
+  loadWakeLockPreference() {
+    try {
+      return localStorage.getItem(STORAGE_KEY_WAKE_LOCK) !== 'off';
+    } catch (_) {
+      return true;
+    }
+  }
+
+  saveWakeLockPreference(enabled) {
+    try {
+      localStorage.setItem(STORAGE_KEY_WAKE_LOCK, enabled ? 'on' : 'off');
+    } catch (_) {}
+  }
+
+  initWakeLock() {
+    const btn = document.getElementById('btn-toggle-wake-lock');
+    if (btn) {
+      btn.addEventListener('click', () => this.handleWakeLockToggle());
+    }
+
+    document.addEventListener('visibilitychange', () => this.handleWakeLockVisibilityChange());
+
+    if (!this.wakeLockEnabled) {
+      this.setWakeLockState('off');
+      return;
+    }
+
+    if (!window.isSecureContext) {
+      this.setWakeLockState('unavailable', 'insecure');
+      return;
+    }
+
+    if (!navigator.wakeLock || typeof navigator.wakeLock.request !== 'function') {
+      this.setWakeLockState('unavailable', 'unsupported');
+      return;
+    }
+
+    this.setWakeLockState('armed');
+    this.armWakeLockFirstGesture();
+  }
+
+  armWakeLockFirstGesture() {
+    if (this.wakeLockFirstGestureHandler) return;
+
+    this.wakeLockFirstGestureHandler = (event) => {
+      this.wakeLockFirstGestureHandler = null;
+      if (!this.wakeLockEnabled || this.wakeLockState !== 'armed') return;
+      if (event && event.target && event.target.closest && event.target.closest('#btn-toggle-wake-lock')) {
+        return;
+      }
+      this.requestWakeLock();
+    };
+
+    document.addEventListener('click', this.wakeLockFirstGestureHandler, { once: true });
+  }
+
+  handleWakeLockToggle() {
+    if (this.wakeLockState === 'unavailable') return;
+
+    if (this.wakeLockEnabled) {
+      this.wakeLockEnabled = false;
+      this.wakeLockEverHeld = false;
+      this.saveWakeLockPreference(false);
+      if (this.wakeLockSentinel) {
+        this.releaseWakeLock('off');
+      } else {
+        this.setWakeLockState('off');
+      }
+      return;
+    }
+
+    this.wakeLockEnabled = true;
+    this.saveWakeLockPreference(true);
+
+    if (!window.isSecureContext) {
+      this.setWakeLockState('unavailable', 'insecure');
+      return;
+    }
+
+    if (!navigator.wakeLock || typeof navigator.wakeLock.request !== 'function') {
+      this.setWakeLockState('unavailable', 'unsupported');
+      return;
+    }
+
+    this.setWakeLockState('armed');
+    this.requestWakeLock();
+  }
+
+  async requestWakeLock() {
+    if (!this.wakeLockEnabled) return;
+    if (document.visibilityState !== 'visible') return;
+
+    if (!window.isSecureContext) {
+      this.setWakeLockState('unavailable', 'insecure');
+      return;
+    }
+
+    if (!navigator.wakeLock || typeof navigator.wakeLock.request !== 'function') {
+      this.setWakeLockState('unavailable', 'unsupported');
+      return;
+    }
+
+    if (this.wakeLockSentinel && !this.wakeLockSentinel.released) return;
+    if (this.wakeLockRequesting) return;
+
+    this.wakeLockRequesting = true;
+    try {
+      const sentinel = await navigator.wakeLock.request('screen');
+
+      if (!this.wakeLockEnabled) {
+        try { await sentinel.release(); } catch (_) {}
+        this.setWakeLockState('off');
+        return;
+      }
+
+      if (document.visibilityState !== 'visible') {
+        try { await sentinel.release(); } catch (_) {}
+        this.setWakeLockState('armed');
+        return;
+      }
+
+      this.wakeLockSentinel = sentinel;
+      this.wakeLockEverHeld = true;
+      this.wakeLockReleaseTarget = null;
+      sentinel.addEventListener('release', () => this.handleWakeLockRelease(sentinel));
+      this.setWakeLockState('held');
+    } catch (_) {
+      if (document.visibilityState === 'hidden') {
+        if (this.wakeLockState !== 'off') this.setWakeLockState('armed');
+      } else if (this.wakeLockEnabled) {
+        if (this.wakeLockEverHeld) {
+          this.setWakeLockState('released');
+          this.armWakeLockRetry();
+        } else {
+          this.setWakeLockState('unavailable', 'rejected');
+        }
+      }
+    } finally {
+      this.wakeLockRequesting = false;
+    }
+  }
+
+  armWakeLockRetry() {
+    if (this.wakeLockRetryHandler) return;
+
+    this.wakeLockRetryHandler = (event) => {
+      this.wakeLockRetryHandler = null;
+      if (!this.wakeLockEnabled || this.wakeLockState !== 'released') return;
+      if (event && event.target && event.target.closest && event.target.closest('#btn-toggle-wake-lock')) {
+        return;
+      }
+      this.requestWakeLock();
+    };
+
+    document.addEventListener('click', this.wakeLockRetryHandler, { once: true });
+  }
+
+  releaseWakeLock(targetState = 'armed') {
+    this.wakeLockReleaseTarget = targetState;
+    const sentinel = this.wakeLockSentinel;
+
+    if (!sentinel) {
+      this.wakeLockReleaseTarget = null;
+      if (targetState === 'off') {
+        this.setWakeLockState('off');
+      } else if (this.wakeLockState !== 'off') {
+        this.setWakeLockState('armed');
+      }
+      return;
+    }
+
+    sentinel.release()
+      .then(() => this.finalizeWakeLockRelease(targetState, sentinel))
+      .catch(() => this.finalizeWakeLockRelease(targetState, sentinel));
+  }
+
+  finalizeWakeLockRelease(targetState, sentinel = null) {
+    if (sentinel && this.wakeLockSentinel && this.wakeLockSentinel !== sentinel) {
+      return;
+    }
+
+    this.wakeLockSentinel = null;
+    this.wakeLockReleaseTarget = null;
+
+    if (targetState === 'off') {
+      this.setWakeLockState('off');
+    } else if (this.wakeLockState !== 'off') {
+      this.setWakeLockState('armed');
+    }
+
+    if (targetState === 'armed' && document.visibilityState === 'visible' && this.wakeLockEnabled) {
+      setTimeout(() => {
+        if (this.wakeLockEnabled && this.wakeLockState === 'armed') {
+          this.requestWakeLock();
+        }
+      }, 0);
+    }
+  }
+
+  handleWakeLockRelease(sentinel = null) {
+    if (sentinel && this.wakeLockSentinel && this.wakeLockSentinel !== sentinel) return;
+
+    const target = this.wakeLockReleaseTarget;
+    if (target) {
+      this.finalizeWakeLockRelease(target, sentinel);
+      return;
+    }
+
+    if (this.wakeLockState !== 'held') return;
+
+    this.wakeLockSentinel = null;
+
+    if (document.visibilityState === 'hidden') {
+      if (this.wakeLockState !== 'off') this.setWakeLockState('armed');
+      return;
+    }
+
+    if (!this.wakeLockEnabled) {
+      this.setWakeLockState('off');
+      return;
+    }
+
+    this.setWakeLockState('released');
+    this.armWakeLockRetry();
+  }
+
+  handleWakeLockVisibilityChange() {
+    if (document.visibilityState === 'hidden') {
+      if (this.wakeLockSentinel) {
+        this.releaseWakeLock('armed');
+      }
+      return;
+    }
+
+    if (!this.wakeLockEnabled) return;
+    if (this.wakeLockState === 'unavailable' || this.wakeLockState === 'off') return;
+    if (this.wakeLockState === 'armed' && !this.wakeLockEverHeld) return;
+
+    this.requestWakeLock();
+  }
+
+  setWakeLockState(state, reason = null) {
+    this.wakeLockState = state;
+    this.wakeLockReason = reason;
+    this.renderWakeLockUI();
+  }
+
+  renderWakeLockUI() {
+    const control = document.getElementById('wake-lock-control');
+    const btn = document.getElementById('btn-toggle-wake-lock');
+    const status = document.getElementById('wake-lock-status');
+    if (!control || !btn || !status) return;
+
+    let statusText = 'พร้อมตรึงหน้าจอ';
+    if (this.wakeLockState === 'held') statusText = 'กำลังตรึงหน้าจอ';
+    else if (this.wakeLockState === 'off') statusText = 'ปิดการตรึงหน้าจอ';
+    else if (this.wakeLockState === 'released') statusText = 'ระบบปลดการตรึงหน้าจอ';
+    else if (this.wakeLockState === 'unavailable') {
+      if (this.wakeLockReason === 'insecure') statusText = 'ต้องเปิดผ่าน HTTPS';
+      else if (this.wakeLockReason === 'unsupported') statusText = 'เบราว์เซอร์นี้ไม่รองรับ';
+      else statusText = 'ระบบไม่อนุญาตให้ตรึงหน้าจอ';
+    }
+
+    const isOn = this.wakeLockState !== 'off';
+    const isUnavailable = this.wakeLockState === 'unavailable';
+
+    control.setAttribute('data-lock-state', this.wakeLockState);
+    if (this.wakeLockReason) {
+      control.setAttribute('data-lock-reason', this.wakeLockReason);
+    } else {
+      control.removeAttribute('data-lock-reason');
+    }
+
+    if (status.textContent !== statusText) {
+      status.textContent = statusText;
+    }
+
+    btn.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+    btn.disabled = isUnavailable;
+    btn.setAttribute('aria-disabled', isUnavailable ? 'true' : 'false');
+    btn.title = isUnavailable
+      ? statusText
+      : (isOn ? 'ปิดการตรึงหน้าจอ' : 'เปิดการตรึงหน้าจอ');
   }
 
   bindSmartSweepControls() {

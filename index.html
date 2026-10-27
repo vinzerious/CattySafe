@@ -102,7 +102,8 @@
     <div class="workbench-grid">
 
       <!-- Left Column: Bio-Acoustic Synthesizer & Smart Sweep -->
-      <section class="panel-surface" aria-labelledby="sweep-console-heading">
+      <section id="left-console-panel" class="panel-surface" aria-labelledby="sweep-console-heading">
+        <div id="standard-console">
 
         <!-- 1-Tap 20-Second Pre-Drive Smart Sweep -->
         <div class="smart-sweep-banner">
@@ -138,6 +139,15 @@
               <span id="master-volume-value" class="tabular-nums">85%</span>
             </div>
           </div>
+
+          <button type="button" id="btn-start-rescue" class="btn-rescue-entry">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 9v4"/>
+              <path d="M12 17h.01"/>
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            </svg>
+            <span>พบสัตว์ติดในรถ? เริ่มขั้นตอนช่วยเหลือ</span>
+          </button>
 
           <!-- 4-Stage Automated Sweep Progress -->
           <div class="sweep-progress-box" aria-live="polite">
@@ -768,7 +778,10 @@
             <div id="mic-alert-recommendation" class="mode-context-banner coax-banner" hidden>
               <div>
                 <strong>ตรวจพบความเคลื่อนไหวในย่านเสียงลูกแมว (1.1–1.5 kHz)!</strong> ห้ามสตาร์ทเครื่องยนต์เด็ดขาด แนะนำให้เปิดฝากระโปรงรถตรวจสอบด้วยตาเปล่า หรือกดปุ่มด้านล่างเพื่อสลับไปเปิดเสียงลูกแมวร้องล่อให้ออกมา
-                <div style="margin-top:0.6rem;">
+                <div class="rescue-mic-actions">
+                  <button type="button" id="btn-start-rescue-from-mic" class="btn-secondary-action rescue-mic-btn">
+                    เริ่มขั้นตอนช่วยเหลือ
+                  </button>
                   <button type="button" id="btn-jump-to-coax" class="btn-secondary-action">
                     สลับไปโหมดเสียงล่อแมวออกจากห้องเครื่องทันที
                   </button>
@@ -828,6 +841,40 @@
               </button>
             </div>
           </div>
+        </div>
+        </div>
+
+        <!-- Guided Rescue Panel -->
+        <div id="rescue-panel" class="rescue-panel" data-tone="neutral" hidden>
+          <header class="rescue-header">
+            <div class="rescue-header-copy">
+              <h2 id="rescue-heading" class="rescue-heading" tabindex="-1">โหมดช่วยเหลือสัตว์ติดในรถ</h2>
+              <div class="rescue-meta">
+                <span id="rescue-species-badge" class="rescue-species-badge">โหมดแมว</span>
+                <span class="rescue-lock-note">ชนิดสัตว์ถูกล็อกระหว่างขั้นตอนช่วยเหลือ</span>
+              </div>
+            </div>
+            <div class="rescue-header-actions">
+              <button type="button" id="btn-rescue-change" class="btn-text-reset" hidden>เปลี่ยนคำตอบ</button>
+              <button type="button" id="btn-exit-rescue" class="btn-text-reset">ออกจากโหมดช่วยเหลือ</button>
+            </div>
+          </header>
+
+          <div id="rescue-progress-row" class="rescue-progress-row" hidden>
+            <div id="rescue-progress-track" class="rescue-progress-track" role="progressbar" aria-label="ความคืบหน้าขั้นตอนช่วยเหลือ" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
+              <div id="rescue-progress-fill" class="rescue-progress-fill"></div>
+            </div>
+            <span id="rescue-progress-text" class="rescue-progress-text tabular-nums">ขั้นตอน 0 จาก 0</span>
+          </div>
+
+          <p id="rescue-status" class="visually-hidden" role="status" aria-live="polite"></p>
+          <div id="rescue-content" class="rescue-content"></div>
+
+          <footer class="rescue-footer">
+            <button type="button" id="btn-rescue-back" class="btn-secondary-action" hidden>ย้อนกลับ</button>
+            <button type="button" id="btn-rescue-success" class="btn-rescue-success">สัตว์ออกมาแล้ว</button>
+            <button type="button" id="btn-rescue-next" class="btn-primary-sweep rescue-next-btn" hidden>ต่อไป</button>
+          </footer>
         </div>
 
       </section>
@@ -910,6 +957,9 @@
               <span id="zone-stamp-btn-text">ประทับตรา: ตรวจโซนนี้ปลอดภัยแล้ว</span>
             </button>
           </div>
+          <button type="button" id="btn-start-rescue-from-zone" class="rescue-zone-entry">
+            พบสัตว์ติดในโซนนี้? เริ่มขั้นตอนช่วยเหลือ
+          </button>
         </div>
 
         <!-- 4-Zone Sequential Stamp Stubs -->

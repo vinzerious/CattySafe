@@ -1429,6 +1429,477 @@ input[type="checkbox"][switch]:focus-visible {
 }
 
 /* ==========================================================================
+   Guided Rescue Flow
+   ========================================================================== */
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.btn-rescue-entry {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  padding: 0.72rem 1rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+  color: var(--ink-primary);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-rescue-entry:hover {
+  background-color: var(--bg-subtle-tint);
+  border-color: var(--coax-primary);
+}
+
+.rescue-mic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.rescue-mic-btn {
+  border-color: var(--coax-border);
+  color: var(--coax-primary);
+}
+
+.rescue-zone-entry {
+  margin-top: 0.65rem;
+  padding: 0.35rem 0;
+  border: none;
+  background: none;
+  color: var(--coax-primary);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.rescue-panel {
+  padding: 1.25rem 1.5rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  --rescue-tone: var(--ink-secondary);
+  --rescue-tone-hover: var(--ink-primary);
+  --rescue-tone-on: var(--bg-surface);
+  --rescue-tone-soft: var(--bg-recessed);
+}
+
+.rescue-panel[hidden],
+.rescue-progress-row[hidden],
+.rescue-footer [hidden] {
+  display: none !important;
+}
+
+.rescue-panel[data-tone="coax"] {
+  --rescue-tone: var(--coax-primary);
+  --rescue-tone-hover: var(--coax-hover);
+  --rescue-tone-on: var(--coax-on);
+  --rescue-tone-soft: var(--coax-surface);
+}
+
+.rescue-panel[data-tone="deter"] {
+  --rescue-tone: var(--deter-primary);
+  --rescue-tone-hover: var(--deter-hover);
+  --rescue-tone-on: var(--deter-on);
+  --rescue-tone-soft: var(--deter-surface);
+}
+
+.rescue-panel[data-tone="warn"] {
+  --rescue-tone: var(--warn-ink);
+  --rescue-tone-hover: var(--warn-border);
+  --rescue-tone-on: var(--bg-surface);
+  --rescue-tone-soft: var(--warn-surface);
+}
+
+.rescue-panel[data-tone="safe"] {
+  --rescue-tone: var(--safe-primary);
+  --rescue-tone-hover: var(--safe-hover);
+  --rescue-tone-on: var(--safe-on);
+  --rescue-tone-soft: var(--safe-surface);
+}
+
+.rescue-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.rescue-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.rescue-header-actions [hidden] {
+  display: none !important;
+}
+
+.rescue-heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2vw, 1.35rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink-primary);
+}
+
+.rescue-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.rescue-species-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid var(--rescue-tone);
+  border-radius: var(--radius-sm);
+  background-color: var(--rescue-tone-soft);
+  color: var(--ink-primary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rescue-lock-note {
+  font-size: 0.76rem;
+  color: var(--ink-muted);
+}
+
+.rescue-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rescue-progress-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--bg-recessed);
+  overflow: hidden;
+}
+
+.rescue-progress-fill {
+  height: 100%;
+  width: 0%;
+  background-color: var(--rescue-tone);
+  transition: width 0.2s var(--ease-out-expo);
+}
+
+.rescue-progress-text {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+
+.rescue-content {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+}
+
+.rescue-lead {
+  margin: 0 0 0.9rem;
+  font-size: 0.9rem;
+  color: var(--ink-secondary);
+}
+
+.rescue-step-heading {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink-primary);
+}
+
+.rescue-step-body p {
+  margin: 0 0 0.6rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-secondary);
+}
+
+.rescue-step-body p:last-child {
+  margin-bottom: 0;
+}
+
+.rescue-note {
+  margin: 0.75rem 0;
+  padding: 0.55rem 0.7rem;
+  border-left: 3px solid var(--rescue-tone);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background-color: var(--rescue-tone-soft);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+
+.rescue-triage {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.rescue-fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.rescue-fieldset legend {
+  margin-bottom: 0.45rem;
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.rescue-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin-bottom: 0.4rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  font-size: 0.84rem;
+  line-height: 1.35;
+  color: var(--ink-primary);
+  cursor: pointer;
+}
+
+.rescue-option:last-child {
+  margin-bottom: 0;
+}
+
+.rescue-option input {
+  margin-top: 0.18rem;
+  accent-color: var(--rescue-tone);
+  flex-shrink: 0;
+}
+
+.rescue-option:has(input:checked) {
+  border-color: var(--rescue-tone);
+  background-color: var(--rescue-tone-soft);
+}
+
+.rescue-option input:checked + span {
+  font-weight: 600;
+}
+
+.rescue-gate-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--rescue-tone-soft);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink-primary);
+  cursor: pointer;
+}
+
+.rescue-gate-check input {
+  margin-top: 0.15rem;
+  accent-color: var(--rescue-tone);
+  flex-shrink: 0;
+}
+
+.rescue-sound-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border-control);
+  border-left: 4px solid var(--rescue-tone);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+}
+
+.rescue-sound-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.rescue-sound-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--rescue-tone);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.rescue-sound-name {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.rescue-sound-freq {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--ink-secondary);
+}
+
+.rescue-sound-card .btn-sound-play {
+  border-color: var(--rescue-tone);
+  color: var(--rescue-tone);
+}
+
+.rescue-sound-card .btn-sound-play:hover,
+.rescue-sound-card .btn-sound-play[data-playing="true"] {
+  background-color: var(--rescue-tone);
+  color: var(--rescue-tone-on);
+  border-color: var(--rescue-tone);
+}
+
+.rescue-torch-btn {
+  margin-top: 0.7rem;
+}
+
+.rescue-link {
+  display: inline-block;
+  margin-top: 0.65rem;
+  padding: 0.25rem 0;
+  border: none;
+  background: none;
+  color: var(--coax-primary);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.rescue-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding-top: 0.2rem;
+}
+
+.rescue-next-btn {
+  background-color: var(--rescue-tone);
+  color: var(--rescue-tone-on);
+  border-color: var(--rescue-tone);
+}
+
+.rescue-next-btn:hover {
+  background-color: var(--rescue-tone-hover);
+}
+
+.rescue-footer .rescue-next-btn {
+  flex: 0 1 auto;
+  min-width: 220px;
+}
+
+.btn-rescue-success {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.62rem 1rem;
+  border: 1px solid var(--safe-primary);
+  border-radius: var(--radius-md);
+  background-color: var(--safe-primary);
+  color: var(--safe-on);
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-rescue-success:hover {
+  background-color: var(--safe-hover);
+  border-color: var(--safe-hover);
+}
+
+@media (max-width: 680px) {
+  .rescue-panel {
+    padding: 1rem 1rem 0.9rem;
+  }
+
+  .rescue-header {
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .rescue-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rescue-footer > button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .rescue-content .rescue-mic-actions {
+    flex-direction: column;
+  }
+
+  .rescue-content .rescue-mic-actions > button {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+
+  .rescue-sound-card {
+    align-items: stretch;
+  }
+
+  .rescue-sound-card .btn-sound-play {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ==========================================================================
    Lower Section: Scientific Research & Feline Ethology Monograph
    ========================================================================== */
 

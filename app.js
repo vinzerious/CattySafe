@@ -161,6 +161,21 @@ class PaiPaiChewChewApp {
     this.wakeLockFirstGestureHandler = null;
     this.wakeLockRetryHandler = null;
 
+    // Guided rescue flow state
+    this.rescueState = {
+      active: false,
+      species: null,
+      location: null,
+      condition: null,
+      engineConfirmed: false,
+      branch: null,
+      stepIndex: 0,
+      screen: 'triage',
+      triggerEl: null,
+      helpContext: null,
+      helpReturnIndex: 0
+    };
+
     this.init();
   }
 
@@ -208,6 +223,7 @@ class PaiPaiChewChewApp {
     this.bindModeTabs();
     this.bindSoundProfileButtons();
     this.bindVehicleInspector();
+    this.bindRescueFlow();
     this.bindMicListener();
     this.bindManualLab();
     this.bindResearchInlinePlayButtons();
@@ -237,6 +253,8 @@ class PaiPaiChewChewApp {
   }
 
   setSpecies(species) {
+    if (this.rescueState && this.rescueState.active) return;
+
     this.species = species === 'dog' ? 'dog' : 'cat';
     this.saveSpecies();
     if (this.engine.isPlaying) {
@@ -820,6 +838,7 @@ class PaiPaiChewChewApp {
     const btns = document.querySelectorAll('[data-inline-play]');
     btns.forEach((btn) => {
       btn.addEventListener('click', () => {
+        if (this.isRescueAudioBlocked()) return;
         const profileId = btn.getAttribute('data-inline-play');
         if (this.engine.isPlaying && this.engine.activeProfileId === profileId) {
           this.engine.stopAll();
@@ -876,6 +895,7 @@ class PaiPaiChewChewApp {
 
     if (playZoneBtn) {
       playZoneBtn.addEventListener('click', () => {
+        if (this.isRescueAudioBlocked()) return;
         const zoneMap = this.getActiveZoneMap();
         const zone = zoneMap[this.selectedZoneId];
         if (!zone) return;
@@ -908,6 +928,749 @@ class PaiPaiChewChewApp {
         this.saveClearedZones();
         this.renderZoneInspector();
       });
+    }
+  }
+
+  // =========================================================================
+  // GUIDED RESCUE FLOW
+  // =========================================================================
+
+  bindRescueFlow() {
+    const bind = (id, handler) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', handler);
+    };
+
+    const startFromSweep = document.getElementById('btn-start-rescue');
+    if (startFromSweep) {
+      startFromSweep.addEventListener('click', () => this.startRescueFlow({ triggerEl: startFromSweep }));
+    }
+
+    const startFromMic = document.getElementById('btn-start-rescue-from-mic');
+    if (startFromMic) {
+      startFromMic.addEventListener('click', () => this.startRescueFlow({
+        triggerEl: startFromMic,
+        location: 'engine-bay',
+        condition: 'heard'
+      }));
+    }
+
+    const startFromZone = document.getElementById('btn-start-rescue-from-zone');
+    if (startFromZone) {
+      startFromZone.addEventListener('click', () => this.startRescueFlow({
+        triggerEl: startFromZone,
+        location: this.selectedZoneId === 'engine-bay' ? 'engine-bay' : 'under-car'
+      }));
+    }
+
+    bind('btn-exit-rescue', () => this.exitRescueFlow());
+    bind('btn-rescue-change', () => this.changeRescueAnswers());
+    bind('btn-rescue-back', () => this.handleRescueBack());
+    bind('btn-rescue-success', () => this.showRescueSuccess());
+    bind('btn-rescue-next', () => this.handleRescueNext());
+
+    const content = document.getElementById('rescue-content');
+    if (content) {
+      content.addEventListener('click', (event) => this.handleRescueContentClick(event));
+      content.addEventListener('change', (event) => this.handleRescueContentChange(event));
+      content.addEventListener('submit', (event) => this.handleRescueContentSubmit(event));
+    }
+  }
+
+  startRescueFlow({ triggerEl = null, location = null, condition = null } = {}) {
+    if (this.rescueState.active) return;
+
+    this.rescueState = {
+      active: true,
+      species: this.species,
+      location,
+      condition,
+      engineConfirmed: false,
+      branch: null,
+      stepIndex: 0,
+      screen: 'triage',
+      triggerEl,
+      helpContext: null,
+      helpReturnIndex: 0
+    };
+
+    this.engine.stopAll();
+    this.resetSweepUI();
+    if (this.isListeningMic || this.isSimulatingMic) {
+      this.stopMicListener();
+    }
+
+    const standard = document.getElementById('standard-console');
+    const panel = document.getElementById('rescue-panel');
+    const left = document.getElementById('left-console-panel');
+    if (standard) standard.hidden = true;
+    if (panel) panel.hidden = false;
+    if (left) left.setAttribute('aria-labelledby', 'rescue-heading');
+
+    this.lockRescueSpecies(true);
+    this.updateRescueSpeciesBadge();
+    this.renderRescueTriage();
+  }
+
+  lockRescueSpecies(lock) {
+    document.querySelectorAll('.species-toggle-btn[data-species]').forEach((btn) => {
+      btn.disabled = lock;
+      if (lock) {
+        btn.setAttribute('aria-disabled', 'true');
+        btn.title = 'ออกจากโหมดช่วยเหลือก่อนเปลี่ยนชนิดสัตว์';
+      } else {
+        btn.removeAttribute('aria-disabled');
+        btn.removeAttribute('title');
+      }
+    });
+  }
+
+  updateRescueSpeciesBadge() {
+    const badge = document.getElementById('rescue-species-badge');
+    if (badge) {
+      badge.textContent = this.rescueState.species === 'dog' ? 'โหมดสุนัข' : 'โหมดแมว';
+    }
+  }
+
+  getRescueStepData() {
+    return {
+      engine: [
+        {
+          id: 'E1',
+          heading: 'ห้ามใช้เสียงไล่หรือบีบแตร',
+          body: ['เสียงดังในห้องเครื่องอาจทำให้สัตว์ตกใจแข็งตัว (Freeze) หรือมุดลึกเข้าสายพานและใบพัด ใช้เฉพาะเสียงล่อเท่านั้น'],
+          nextLabel: 'เข้าใจแล้ว → ต่อไป'
+        },
+        {
+          id: 'E2',
+          heading: 'เคาะฝากระโปรงเบา ๆ 3 ครั้ง',
+          body: ['ใช้ข้อนิ้วเคาะ ไม่ใช้ฝ่ามือตบ แล้วหยุดฟังเสียงตอบกลับในห้องเครื่อง'],
+          nextLabel: 'เคาะแล้ว → ต่อไป'
+        },
+        {
+          id: 'E3',
+          heading: 'เปิดฝากระโปรงอย่างปลอดภัย',
+          body: ['เปิดได้เฉพาะเมื่อยืนอยู่ด้านข้างและทำได้อย่างปลอดภัย ห้ามเอื้อมมือหรือศีรษะเข้าไปในห้องเครื่อง'],
+          nextLabel: 'เปิดฝากระโปรงแล้ว → ต่อไป',
+          secondaryLabel: 'เปิดไม่ได้ / ไม่แน่ใจ → ขอความช่วยเหลือ',
+          secondaryAction: 'help'
+        },
+        {
+          id: 'E4',
+          heading: 'วางมือถือและเล่นเสียงล่อที่ 1',
+          body: ['วางมือถือบนพื้นห่างจากหน้ารถ 1.5–2 เมตร หันลำโพงเข้าหาตัวรถ แล้วถอยไปยืนเงียบ ๆ อย่างน้อย 60 วินาที'],
+          sound: { cat: 'kitten-contact-call', dog: 'dog-squeaky-toy' },
+          soundLabel: 'เสียงล่อที่ 1',
+          playLabel: 'เล่นเสียงล่อที่ 1',
+          nextLabel: 'ยังไม่ออก → ลองเสียงที่ 2'
+        },
+        {
+          id: 'E5',
+          heading: 'ลองเสียงล่อที่ 2',
+          body: ['วางมือถือตำแหน่งเดิม เว้นระยะอย่างน้อย 60 วินาทีระหว่างเสียงแต่ละครั้ง แล้วถอยไปยืนเงียบ ๆ'],
+          sound: { cat: 'food-can-kibble', dog: 'dog-bowl-kibble' },
+          soundLabel: 'เสียงล่อที่ 2',
+          playLabel: 'เล่นเสียงล่อที่ 2',
+          nextLabel: 'ยังไม่ออก → ขอความช่วยเหลือ'
+        },
+        {
+          id: 'E6',
+          kind: 'help',
+          heading: 'ขอความช่วยเหลือจากผู้เชี่ยวชาญ',
+          body: [
+            'โทรหาสัตวแพทย์หรือทีมกู้ภัยในพื้นที่ และแจ้งว่าสัตว์ติดอยู่ในห้องเครื่อง',
+            'ห้ามสตาร์ทเครื่องหรือขับรถจนกว่าจะมีผู้เชี่ยวชาญตรวจสอบ'
+          ]
+        }
+      ],
+      under: [
+        {
+          id: 'U1',
+          heading: 'ห้ามสตาร์ทเครื่องและห้ามมุดใต้รถ',
+          body: ['สัตว์ที่มีทางหนีออกด้านข้างจะวิ่งออกเมื่อได้ยินเสียงไล่ และคุณไม่ควรเข้าไปในพื้นที่แคบที่มองไม่เห็น'],
+          nextLabel: 'เข้าใจแล้ว → ต่อไป'
+        },
+        {
+          id: 'U2',
+          heading: 'ใช้ไฟฉายส่องจากด้านนอก',
+          body: ['ส่องซุ้มล้อและใต้ท้องจากด้านนอกเพื่อดูตำแหน่งและทางหนีของสัตว์'],
+          torch: true,
+          nextLabel: 'ส่องแล้ว → ต่อไป'
+        },
+        {
+          id: 'U3',
+          heading: 'วางมือถือและเล่นเสียงไล่ที่ 1',
+          body: ['วางมือถือข้างรถ ห่าง 1–2 เมตร หันลำโพงเข้าหาใต้ท้อง แล้วถอยออกไปยืนเงียบ ๆ อย่างน้อย 60 วินาที'],
+          sound: { cat: 'ultrasonic-sweep', dog: 'dog-whistle-sweep' },
+          soundLabel: 'เสียงไล่ที่ 1',
+          playLabel: 'เล่นเสียงไล่ที่ 1',
+          nextLabel: 'ยังไม่ออก → ลองเสียงที่ 2'
+        },
+        {
+          id: 'U4',
+          heading: 'ลองเสียงไล่ที่ 2',
+          body: ['วางมือถือตำแหน่งเดิม เว้นระยะอย่างน้อย 60 วินาทีระหว่างเสียงแต่ละครั้ง'],
+          sound: { cat: 'feline-hiss', dog: 'dog-shaker-interrupter' },
+          soundLabel: 'เสียงไล่ที่ 2',
+          playLabel: 'เล่นเสียงไล่ที่ 2',
+          nextLabel: 'ยังไม่ออก → ขอความช่วยเหลือ'
+        },
+        {
+          id: 'U5',
+          kind: 'help',
+          heading: 'ขอความช่วยเหลือจากผู้เชี่ยวชาญ',
+          body: [
+            'โทรหาสัตวแพทย์หรือทีมกู้ภัยในพื้นที่ และแจ้งว่าสัตว์ติดอยู่ใต้ท้องรถหรือซุ้มล้อ',
+            'ห้ามสตาร์ทเครื่องหรือขับรถจนกว่าจะมีผู้เชี่ยวชาญตรวจสอบ'
+          ]
+        }
+      ],
+      locate: [
+        {
+          id: 'N1',
+          heading: 'ห้ามใช้เสียงไล่และห้ามสตาร์ทเครื่อง',
+          body: ['เพราะสัตว์อาจติดอยู่ในห้องเครื่อง ซึ่งเสียงไล่อาจทำให้มันมุดลึกกว่าเดิม'],
+          nextLabel: 'เข้าใจแล้ว → ต่อไป'
+        },
+        {
+          id: 'N2',
+          heading: 'ใช้ไฟฉายส่องทั้ง 4 โซนจากด้านนอก',
+          body: ['ส่องห้องเครื่อง ซุ้มล้อหน้า ใต้ท้อง และท้ายรถ ห้ามมุดใต้รถหรือเอื้อมมือเข้าไป'],
+          torch: true,
+          nextLabel: 'ส่องครบ 4 โซนแล้ว → ต่อไป'
+        },
+        {
+          id: 'N3',
+          heading: 'เลือกตำแหน่งที่พบหรือขอความช่วยเหลือ',
+          body: ['ถ้าเห็นหรือได้ยินสัตว์ ให้กลับไปเลือกตำแหน่งใหม่ ถ้าไม่พบ ให้โทรหาผู้เชี่ยวชาญและห้ามสตาร์ทเครื่อง'],
+          nextLabel: 'กลับไปเลือกตำแหน่ง',
+          nextAction: 'triage',
+          secondaryLabel: 'ไม่พบสัตว์ → ขอความช่วยเหลือ',
+          secondaryAction: 'help'
+        }
+      ],
+      injured: [
+        {
+          id: 'I1',
+          heading: 'ห้ามสตาร์ทเครื่อง ห้ามเล่นเสียง และห้ามจับสัตว์',
+          body: ['สัตว์ที่บาดเจ็บหรือไม่ขยับอาจกัดหรือได้รับบาดเจ็บเพิ่มเติม และเสียงดังอาจทำให้ตกใจ'],
+          nextLabel: 'เข้าใจแล้ว → ต่อไป'
+        },
+        {
+          id: 'I2',
+          heading: 'กันคนและสัตว์อื่นให้อยู่ห่าง',
+          body: ['เว้นพื้นที่รอบรถ และอย่าให้เด็กหรือสัตว์อื่นเข้าใกล้'],
+          nextLabel: 'ดำเนินการต่อ'
+        },
+        {
+          id: 'I3',
+          kind: 'help',
+          heading: 'โทรหาสัตวแพทย์หรือทีมกู้ภัย',
+          body: ['แจ้งตำแหน่งและสภาพของสัตว์ ห้ามสตาร์ทเครื่องหรือขับรถจนกว่าจะมีผู้เชี่ยวชาญยืนยันว่าสัตว์ออกมาแล้ว']
+        }
+      ]
+    };
+  }
+
+  getRescueSteps() {
+    if (!this.rescueState.branch) return [];
+    return this.getRescueStepData()[this.rescueState.branch] || [];
+  }
+
+  getRescueStep() {
+    const steps = this.getRescueSteps();
+    return steps[this.rescueState.stepIndex] || null;
+  }
+
+  chooseRescueBranch() {
+    if (this.rescueState.condition === 'injured') return 'injured';
+    if (this.rescueState.location === 'engine-bay') return 'engine';
+    if (this.rescueState.location === 'under-car') return 'under';
+    return 'locate';
+  }
+
+  getRescueTone(branch) {
+    if (branch === 'engine') return 'coax';
+    if (branch === 'under') return 'deter';
+    if (branch === 'injured') return 'warn';
+    return 'neutral';
+  }
+
+  isRescueAudioBlocked() {
+    return Boolean(this.rescueState && this.rescueState.active && !this.rescueState.engineConfirmed);
+  }
+
+  renderRescueTriage() {
+    const panel = document.getElementById('rescue-panel');
+    const content = document.getElementById('rescue-content');
+    if (!panel || !content) return;
+
+    this.rescueState.screen = 'triage';
+    this.rescueState.branch = null;
+    this.rescueState.stepIndex = 0;
+    panel.setAttribute('data-tone', 'neutral');
+    this.hideRescueProgress();
+
+    const loc = this.rescueState.location;
+    const cond = this.rescueState.condition;
+    const radio = (name, value, label, checked) => `
+      <label class="rescue-option">
+        <input type="radio" name="${name}" value="${value}"${checked ? ' checked' : ''}>
+        <span>${label}</span>
+      </label>`;
+
+    content.innerHTML = `
+      <h3 id="rescue-step-heading" class="rescue-step-heading" tabindex="-1">ช่วยเหลือสัตว์ที่ติดอยู่ในรถ</h3>
+      <p class="rescue-lead">ตอบ 2 ข้อเพื่อให้ระบบเลือกขั้นตอนที่ปลอดภัยที่สุด</p>
+      <form id="rescue-triage-form" class="rescue-triage">
+        <fieldset class="rescue-fieldset">
+          <legend>สัตว์อยู่บริเวณไหน?</legend>
+          ${radio('rescue-location', 'engine-bay', 'ในห้องเครื่อง / ใต้ฝากระโปรง', loc === 'engine-bay')}
+          ${radio('rescue-location', 'under-car', 'ใต้ท้องรถ / ซุ้มล้อ', loc === 'under-car')}
+          ${radio('rescue-location', 'not-sure', 'ไม่แน่ใจ / ได้ยินแต่ไม่เห็น', loc === 'not-sure')}
+        </fieldset>
+        <fieldset class="rescue-fieldset">
+          <legend>สัตว์อยู่ในสภาพไหน?</legend>
+          ${radio('rescue-condition', 'moving', 'เห็นและยังขยับได้', cond === 'moving')}
+          ${radio('rescue-condition', 'heard', 'ได้ยินเสียงแต่ไม่เห็นตัว', cond === 'heard')}
+          ${radio('rescue-condition', 'injured', 'เห็นแต่ไม่ขยับ / บาดเจ็บ', cond === 'injured')}
+        </fieldset>
+        <p class="rescue-note">หากสัตว์บาดเจ็บหรือไม่ขยับ ระบบจะข้ามไปยังขั้นตอนขอความช่วยเหลือจากผู้เชี่ยวชาญ</p>
+        <button type="submit" id="btn-rescue-start" class="btn-primary-sweep rescue-next-btn"${(loc && cond) ? '' : ' disabled'}>เริ่มขั้นตอนช่วยเหลือ</button>
+      </form>`;
+
+    this.updateRescueFooter();
+    this.setRescueStatus('ขั้นตอนช่วยเหลือ: ช่วยเหลือสัตว์ที่ติดอยู่ในรถ');
+    this.focusRescueHeading();
+  }
+
+  updateRescueStartState() {
+    const btn = document.getElementById('btn-rescue-start');
+    if (!btn) return;
+    btn.disabled = !(this.rescueState.location && this.rescueState.condition);
+  }
+
+  beginRescueGate() {
+    if (!this.rescueState.location || !this.rescueState.condition) return;
+    this.rescueState.branch = this.chooseRescueBranch();
+    this.rescueState.screen = 'gate';
+    this.rescueState.engineConfirmed = false;
+    this.renderRescueGate();
+  }
+
+  renderRescueGate() {
+    const panel = document.getElementById('rescue-panel');
+    const content = document.getElementById('rescue-content');
+    if (!panel || !content) return;
+
+    panel.setAttribute('data-tone', 'neutral');
+    this.hideRescueProgress();
+
+    content.innerHTML = `
+      <h3 id="rescue-step-heading" class="rescue-step-heading" tabindex="-1">ยืนยันความปลอดภัยก่อนเริ่ม</h3>
+      <div class="rescue-step-body">
+        <p>ดับเครื่องยนต์ทันทีหากยังติดอยู่ และระวังพื้นผิวที่ร้อน</p>
+        <p>ห้ามสตาร์ทเครื่องหรือขับรถจนกว่าจะแน่ใจว่าสัตว์ออกมาแล้ว</p>
+      </div>
+      <label class="rescue-gate-check">
+        <input type="checkbox" id="rescue-engine-confirm"${this.rescueState.engineConfirmed ? ' checked' : ''}>
+        <span>ยืนยันว่ารถดับเครื่องแล้ว</span>
+      </label>`;
+
+    this.updateRescueFooter();
+    this.setRescueStatus('ยืนยันความปลอดภัยก่อนเริ่ม');
+    this.focusRescueHeading();
+  }
+
+  renderRescueStep() {
+    const panel = document.getElementById('rescue-panel');
+    const content = document.getElementById('rescue-content');
+    if (!panel || !content) return;
+
+    const steps = this.getRescueSteps();
+    const step = steps[this.rescueState.stepIndex];
+    if (!step) return;
+
+    this.rescueState.screen = 'step';
+    panel.setAttribute('data-tone', this.getRescueTone(this.rescueState.branch));
+
+    if (step.kind === 'help') {
+      this.renderRescueHelpStep(step, steps.length);
+      return;
+    }
+
+    const profileId = step.sound ? step.sound[this.rescueState.species] : null;
+    const profile = profileId ? SOUND_PROFILES[profileId] : null;
+    const soundCard = profile ? `
+      <div class="rescue-sound-card">
+        <div class="rescue-sound-info">
+          <span class="rescue-sound-label">${step.soundLabel}:</span>
+          <strong class="rescue-sound-name">${profile.nameTh}</strong>
+          <span class="rescue-sound-freq tabular-nums">(${profile.freqLabel})</span>
+        </div>
+        <button type="button" id="btn-rescue-play" class="btn-sound-play" data-profile-id="${profile.id}" data-play-label="${step.playLabel}" data-playing="false" aria-pressed="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span class="rescue-play-label">${step.playLabel}</span>
+        </button>
+      </div>` : '';
+    const torchButton = step.torch ? `
+      <button type="button" class="btn-secondary-action rescue-torch-btn" data-rescue-torch>
+        เปิดไฟฉาย
+      </button>` : '';
+    const secondary = step.secondaryLabel ? `
+      <button type="button" class="rescue-link" data-rescue-action="${step.secondaryAction}">${step.secondaryLabel}</button>` : '';
+
+    content.innerHTML = `
+      <h3 id="rescue-step-heading" class="rescue-step-heading" tabindex="-1">${step.heading}</h3>
+      <div class="rescue-step-body">
+        ${step.body.map((p) => `<p>${p}</p>`).join('')}
+      </div>
+      ${torchButton}
+      ${soundCard}
+      ${secondary}`;
+
+    this.updateRescueProgress(this.rescueState.stepIndex + 1, steps.length);
+    this.updateRescueFooter();
+    this.renderRescueAudioState(this.engine.getStatus());
+    this.setRescueStatus(`ขั้นตอน ${this.rescueState.stepIndex + 1} จาก ${steps.length}: ${step.heading}`);
+    this.focusRescueHeading();
+  }
+
+  renderRescueHelpStep(step, total) {
+    const content = document.getElementById('rescue-content');
+    if (!content) return;
+
+    content.innerHTML = `
+      <h3 id="rescue-step-heading" class="rescue-step-heading" tabindex="-1">${step.heading}</h3>
+      <div class="rescue-step-body">
+        ${step.body.map((p) => `<p>${p}</p>`).join('')}
+      </div>`;
+
+    this.updateRescueProgress(this.rescueState.stepIndex + 1, total);
+    this.updateRescueFooter();
+    this.setRescueStatus(`ขั้นตอน ${this.rescueState.stepIndex + 1} จาก ${total}: ${step.heading}`);
+    this.focusRescueHeading();
+  }
+
+  renderRescueHelp(context) {
+    const panel = document.getElementById('rescue-panel');
+    const content = document.getElementById('rescue-content');
+    if (!panel || !content) return;
+
+    const contextLine = {
+      engine: 'และแจ้งว่าสัตว์ติดอยู่ในห้องเครื่อง',
+      under: 'และแจ้งว่าสัตว์ติดอยู่ใต้ท้องรถหรือซุ้มล้อ',
+      locate: 'และแจ้งว่ายังหาตำแหน่งสัตว์ไม่พบ',
+      injured: 'และแจ้งว่าสัตว์บาดเจ็บหรือไม่ขยับ'
+    }[context] || 'และแจ้งตำแหน่งที่พบสัตว์';
+
+    this.rescueState.screen = 'help';
+    this.rescueState.helpContext = context;
+    panel.setAttribute('data-tone', 'warn');
+    this.hideRescueProgress();
+
+    content.innerHTML = `
+      <h3 id="rescue-step-heading" class="rescue-step-heading" tabindex="-1">ขอความช่วยเหลือจากผู้เชี่ยวชาญ</h3>
+      <div class="rescue-step-body">
+        <p>โทรหาสัตวแพทย์หรือทีมกู้ภัยในพื้นที่ ${contextLine}</p>
+        <p>ห้ามสตาร์ทเครื่องหรือขับรถจนกว่าจะมีผู้เชี่ยวชาญตรวจสอบ</p>
+      </div>`;
+
+    this.updateRescueFooter();
+    this.setRescueStatus('ขอความช่วยเหลือจากผู้เชี่ยวชาญ');
+    this.focusRescueHeading();
+  }
+
+  showRescueHelp(context) {
+    this.engine.stopAll();
+    this.rescueState.helpReturnIndex = this.rescueState.stepIndex;
+    this.renderRescueHelp(context);
+  }
+
+  renderRescueSuccess() {
+    const panel = document.getElementById('rescue-panel');
+    const content = document.getElementById('rescue-content');
+    if (!panel || !content) return;
+
+    this.rescueState.screen = 'success';
+    panel.setAttribute('data-tone', 'safe');
+    this.hideRescueProgress();
+
+    content.innerHTML = `
+      <h3 id="rescue-step-heading" class="rescue-step-heading" tabindex="-1">สัตว์ออกมาแล้ว</h3>
+      <div class="rescue-step-body">
+        <p>อย่าวิ่งไล่หรือจับสัตว์ ให้เว้นระยะและปล่อยให้มันเดินออกไปเอง</p>
+        <p>ก่อนสตาร์ทเครื่อง ตรวจทั้ง 4 โซนและประทับตราให้ครบ</p>
+      </div>
+      <div class="rescue-mic-actions">
+        <button type="button" id="btn-rescue-go-inspector" class="btn-primary-sweep rescue-next-btn">ไปที่เช็คลิสต์ 4 โซน</button>
+        <button type="button" id="btn-rescue-restart" class="btn-secondary-action">เริ่มรอบใหม่</button>
+      </div>`;
+
+    this.updateRescueFooter();
+    this.setRescueStatus('สัตว์ออกมาแล้ว');
+    this.focusRescueHeading();
+  }
+
+  showRescueSuccess() {
+    this.engine.stopAll();
+    this.renderRescueSuccess();
+  }
+
+  updateRescueFooter() {
+    const back = document.getElementById('btn-rescue-back');
+    const success = document.getElementById('btn-rescue-success');
+    const next = document.getElementById('btn-rescue-next');
+    const change = document.getElementById('btn-rescue-change');
+    if (!back || !success || !next) return;
+
+    const screen = this.rescueState.screen;
+    const step = this.getRescueStep();
+    const isTriage = screen === 'triage';
+    const isGate = screen === 'gate';
+    const isStep = screen === 'step';
+    const isHelp = screen === 'help' || (isStep && step && step.kind === 'help');
+    const isSuccess = screen === 'success';
+
+    back.hidden = isTriage || isSuccess;
+    success.hidden = isSuccess;
+    next.hidden = isTriage || isSuccess || isHelp;
+    if (change) change.hidden = isTriage || isSuccess;
+
+    if (isGate) {
+      next.hidden = false;
+      next.textContent = 'ดำเนินการต่อ';
+      next.disabled = !this.rescueState.engineConfirmed;
+    } else if (isStep && step && step.nextLabel) {
+      next.hidden = false;
+      next.textContent = step.nextLabel;
+      next.disabled = false;
+    } else {
+      next.disabled = false;
+    }
+  }
+
+  updateRescueProgress(current, total) {
+    const row = document.getElementById('rescue-progress-row');
+    const track = document.getElementById('rescue-progress-track');
+    const fill = document.getElementById('rescue-progress-fill');
+    const text = document.getElementById('rescue-progress-text');
+    if (!row || !track || !fill || !text) return;
+
+    row.hidden = false;
+    track.setAttribute('aria-valuemax', String(total));
+    track.setAttribute('aria-valuenow', String(current));
+    fill.style.width = `${Math.max(0, Math.min(100, (current / total) * 100))}%`;
+    text.textContent = `ขั้นตอน ${current} จาก ${total}`;
+  }
+
+  hideRescueProgress() {
+    const row = document.getElementById('rescue-progress-row');
+    if (row) row.hidden = true;
+  }
+
+  setRescueStatus(text) {
+    const status = document.getElementById('rescue-status');
+    if (status && status.textContent !== text) status.textContent = text;
+  }
+
+  focusRescueHeading() {
+    const heading = document.getElementById('rescue-step-heading');
+    if (heading) heading.focus();
+  }
+
+  handleRescueContentClick(event) {
+    const play = event.target.closest('#btn-rescue-play');
+    if (play) {
+      this.toggleRescueSound(play.getAttribute('data-profile-id'));
+      return;
+    }
+
+    const torch = event.target.closest('[data-rescue-torch]');
+    if (torch) {
+      const openTorch = document.getElementById('btn-open-torch');
+      if (openTorch) openTorch.click();
+      return;
+    }
+
+    const action = event.target.closest('[data-rescue-action]');
+    if (action) {
+      const kind = action.getAttribute('data-rescue-action');
+      if (kind === 'help') this.showRescueHelp(this.rescueState.branch);
+      else if (kind === 'triage') this.changeRescueAnswers();
+      return;
+    }
+
+    if (event.target.closest('#btn-rescue-go-inspector')) {
+      this.goToInspectorFromRescue();
+      return;
+    }
+
+    if (event.target.closest('#btn-rescue-restart')) {
+      this.resetRescueRun();
+    }
+  }
+
+  handleRescueContentChange(event) {
+    const target = event.target;
+    if (target.name === 'rescue-location') {
+      this.rescueState.location = target.value;
+      this.updateRescueStartState();
+    } else if (target.name === 'rescue-condition') {
+      this.rescueState.condition = target.value;
+      this.updateRescueStartState();
+    } else if (target.id === 'rescue-engine-confirm') {
+      this.rescueState.engineConfirmed = target.checked;
+      this.updateRescueFooter();
+    }
+  }
+
+  handleRescueContentSubmit(event) {
+    if (event.target.id !== 'rescue-triage-form') return;
+    event.preventDefault();
+    if (this.rescueState.location && this.rescueState.condition) {
+      this.beginRescueGate();
+    }
+  }
+
+  handleRescueNext() {
+    const screen = this.rescueState.screen;
+    if (screen === 'gate') {
+      if (!this.rescueState.engineConfirmed) return;
+      this.rescueState.screen = 'step';
+      this.rescueState.stepIndex = 0;
+      this.engine.stopAll();
+      this.renderRescueStep();
+      return;
+    }
+
+    if (screen !== 'step') return;
+    const steps = this.getRescueSteps();
+    const step = steps[this.rescueState.stepIndex];
+    if (!step || !step.nextLabel) return;
+
+    this.engine.stopAll();
+
+    if (step.nextAction === 'help') {
+      this.showRescueHelp(this.rescueState.branch);
+      return;
+    }
+    if (step.nextAction === 'triage') {
+      this.changeRescueAnswers();
+      return;
+    }
+    if (this.rescueState.stepIndex < steps.length - 1) {
+      this.rescueState.stepIndex += 1;
+      this.renderRescueStep();
+    }
+  }
+
+  handleRescueBack() {
+    const screen = this.rescueState.screen;
+    this.engine.stopAll();
+
+    if (screen === 'gate') {
+      this.rescueState.screen = 'triage';
+      this.renderRescueTriage();
+      return;
+    }
+
+    if (screen === 'help') {
+      this.rescueState.screen = 'step';
+      this.rescueState.stepIndex = this.rescueState.helpReturnIndex;
+      this.renderRescueStep();
+      return;
+    }
+
+    if (screen === 'step') {
+      if (this.rescueState.stepIndex > 0) {
+        this.rescueState.stepIndex -= 1;
+        this.renderRescueStep();
+      } else {
+        this.rescueState.screen = 'gate';
+        this.renderRescueGate();
+      }
+    }
+  }
+
+  toggleRescueSound(profileId) {
+    if (!profileId) return;
+    if (this.engine.isPlaying && this.engine.activeProfileId === profileId) {
+      this.engine.stopAll();
+    } else {
+      this.engine.stopAll();
+      this.engine.playProfile(profileId);
+    }
+  }
+
+  renderRescueAudioState(status) {
+    const btn = document.getElementById('btn-rescue-play');
+    if (!btn) return;
+    const profileId = btn.getAttribute('data-profile-id');
+    const playLabel = btn.getAttribute('data-play-label') || 'เล่นเสียง';
+    const isPlaying = Boolean(status && status.isPlaying && status.activeProfileId === profileId);
+    btn.setAttribute('data-playing', isPlaying ? 'true' : 'false');
+    btn.setAttribute('aria-pressed', isPlaying ? 'true' : 'false');
+    const label = btn.querySelector('.rescue-play-label');
+    if (label) label.textContent = isPlaying ? 'หยุดเสียง' : playLabel;
+  }
+
+  goToInspectorFromRescue() {
+    const heading = document.getElementById('inspector-heading');
+    if (!heading) return;
+    heading.setAttribute('tabindex', '-1');
+    heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    heading.focus({ preventScroll: true });
+  }
+
+  resetRescueRun() {
+    this.engine.stopAll();
+    this.rescueState.location = null;
+    this.rescueState.condition = null;
+    this.rescueState.engineConfirmed = false;
+    this.rescueState.branch = null;
+    this.rescueState.stepIndex = 0;
+    this.rescueState.screen = 'triage';
+    this.rescueState.helpContext = null;
+    this.rescueState.helpReturnIndex = 0;
+    this.renderRescueTriage();
+  }
+
+  changeRescueAnswers() {
+    this.engine.stopAll();
+    this.rescueState.engineConfirmed = false;
+    this.rescueState.branch = null;
+    this.rescueState.stepIndex = 0;
+    this.rescueState.screen = 'triage';
+    this.rescueState.helpContext = null;
+    this.rescueState.helpReturnIndex = 0;
+    this.renderRescueTriage();
+  }
+
+  exitRescueFlow() {
+    if (!this.rescueState.active) return;
+
+    const trigger = this.rescueState.triggerEl;
+    this.engine.stopAll();
+    this.resetSweepUI();
+
+    this.rescueState.active = false;
+    const standard = document.getElementById('standard-console');
+    const panel = document.getElementById('rescue-panel');
+    const left = document.getElementById('left-console-panel');
+    if (standard) standard.hidden = false;
+    if (panel) panel.hidden = true;
+    if (left) left.setAttribute('aria-labelledby', 'sweep-console-heading');
+
+    this.lockRescueSpecies(false);
+
+    const fallback = document.getElementById('btn-start-rescue');
+    if (trigger && trigger.isConnected && !trigger.closest('[hidden]')) {
+      trigger.focus();
+    } else if (fallback) {
+      fallback.focus();
     }
   }
 
@@ -1069,6 +1832,7 @@ class PaiPaiChewChewApp {
     }
 
     this.renderZoneInspector();
+    this.renderRescueAudioState(status);
   }
 
   // =========================================================================
@@ -1446,6 +2210,7 @@ class PaiPaiChewChewApp {
 
     if (soundBtn) {
       soundBtn.addEventListener('click', () => {
+        if (this.isRescueAudioBlocked()) return;
         if (this.engine.isPlaying) {
           this.engine.stopAll();
         } else {

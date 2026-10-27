@@ -432,6 +432,9 @@ export class PaiPaiAcousticEngine {
     this.micStream = null;
     this.micAnalyser = null;
     this.micSimulated = false;
+
+    // Shared procedural noise bed for the cat coax realism layer
+    this._catNoiseBuffer = null;
   }
 
   initContext() {
@@ -547,7 +550,7 @@ export class PaiPaiAcousticEngine {
         this._runKittenContactCall();
         break;
       case 'food-can-kibble':
-        this._runFoodCanKibble();
+        this._runCatFoodCanKibble();
         break;
       case 'prey-squeak':
         this._runPreySqueak();
@@ -656,6 +659,309 @@ export class PaiPaiAcousticEngine {
       data[i] = Math.random() * 2 - 1;
     }
     return buffer;
+  }
+
+  // Shared procedural helpers for the cat coax realism layer.
+
+  _getCatNoiseBuffer() {
+    if (!this._catNoiseBuffer) {
+      this._catNoiseBuffer = this._createNoiseBuffer(2.0);
+    }
+    return this._catNoiseBuffer;
+  }
+
+  _trackCatNode(node, endTime) {
+    if (!node) return node;
+    node._catEndTime = endTime;
+    this.activeNodes.push(node);
+    return node;
+  }
+
+  _pruneCatNodes() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const kept = [];
+    this.activeNodes.forEach((node) => {
+      if (node._catEndTime && node._catEndTime <= now) {
+        try { if (node.stop) node.stop(); } catch (_) {}
+        try { node.disconnect(); } catch (_) {}
+      } else {
+        kept.push(node);
+      }
+    });
+    this.activeNodes = kept;
+  }
+
+  _createGlottalWave(harmonics) {
+    const real = new Float32Array(harmonics.length + 1);
+    const imag = new Float32Array(harmonics.length + 1);
+    harmonics.forEach((amplitude, index) => {
+      imag[index + 1] = amplitude;
+    });
+    return this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+  }
+
+  _scheduleCatVocalization({
+    startTime,
+    duration,
+    baseHz,
+    pitchPoints,
+    formantStart,
+    formantMid,
+    formantEnd,
+    breathAmount = 0.12,
+    breathBand = 1800,
+    breathQ = 1.2,
+    outputGain = 0.55,
+    shimmerRate = 5.5,
+    shimmerDepth = 0.03,
+    trillRate = 0,
+    trillDepth = 0,
+    attack = 0.025,
+    release = 0.1,
+    lowCut = 0,
+    highCut = 0,
+    harmonics = [1, 0.5, 0.25, 0.12]
+  }) {
+    const start = startTime;
+    const end = start + duration;
+    const attackTime = Math.min(attack, duration * 0.4);
+    const releaseTime = Math.min(release, duration * 0.4);
+    const sustainStart = start + attackTime;
+    const releaseStart = Math.max(sustainStart, end - releaseTime);
+
+    const osc = this.ctx.createOscillator();
+    osc.setPeriodicWave(this._createGlottalWave(harmonics));
+    osc.frequency.setValueAtTime(Math.max(40, baseHz), start);
+    pitchPoints.forEach((point) => {
+      const at = start + duration * point.at;
+      if (at <= start) {
+        osc.frequency.setValueAtTime(Math.max(40, baseHz * point.ratio), start);
+        return;
+      }
+      osc.frequency.exponentialRampToValueAtTime(Math.max(40, baseHz * point.ratio), at);
+    });
+
+    const env = this.ctx.createGain();
+    env.gain.setValueAtTime(0.001, start);
+    env.gain.linearRampToValueAtTime(outputGain, sustainStart);
+    env.gain.setValueAtTime(outputGain, releaseStart);
+    env.gain.exponentialRampToValueAtTime(0.001, end);
+    let output = env;
+    if (lowCut > 0) {
+      for (let stage = 0; stage < 2; stage++) {
+        const hp = this.ctx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.value = lowCut;
+        hp.Q.value = 0.7;
+        output.connect(hp);
+        output = hp;
+        this._trackCatNode(hp, end + 0.1);
+      }
+    }
+    if (highCut > 0) {
+      for (let stage = 0; stage < 2; stage++) {
+        const lp = this.ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = highCut;
+        lp.Q.value = 0.7;
+        output.connect(lp);
+        output = lp;
+        this._trackCatNode(lp, end + 0.1);
+      }
+    }
+    output.connect(this.masterGain);
+    this._trackCatNode(env, end + 0.1);
+    this._trackCatNode(osc, end + 0.1);
+
+    for (let i = 0; i < formantStart.length; i++) {
+      const f0 = formantStart[i];
+      const fMid = (formantMid && formantMid[i]) ? formantMid[i] : f0;
+      const f1 = (formantEnd && formantEnd[i]) ? formantEnd[i] : f0;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(Math.max(40, f0.hz), start);
+      filter.frequency.exponentialRampToValueAtTime(Math.max(40, fMid.hz), start + duration * 0.45);
+      filter.frequency.exponentialRampToValueAtTime(Math.max(40, f1.hz), end);
+      filter.Q.value = Math.max(2, Math.min(6, f0.q || 4));
+      const gain = this.ctx.createGain();
+      gain.gain.value = f0.gain || 0.3;
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(env);
+      this._trackCatNode(filter, end + 0.1);
+      this._trackCatNode(gain, end + 0.1);
+    }
+
+    if (breathAmount > 0.001) {
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = this._getCatNoiseBuffer();
+      const breathFilter = this.ctx.createBiquadFilter();
+      breathFilter.type = 'bandpass';
+      breathFilter.frequency.value = breathBand;
+      breathFilter.Q.value = breathQ;
+      const breathGain = this.ctx.createGain();
+      breathGain.gain.setValueAtTime(0.001, start);
+      breathGain.gain.linearRampToValueAtTime(breathAmount, start + Math.min(0.05, duration * 0.2));
+      breathGain.gain.exponentialRampToValueAtTime(0.001, end);
+      noise.connect(breathFilter);
+      breathFilter.connect(breathGain);
+      breathGain.connect(env);
+      noise.start(start, Math.random() * 0.8);
+      noise.stop(end + 0.02);
+      this._trackCatNode(noise, end + 0.1);
+      this._trackCatNode(breathFilter, end + 0.1);
+      this._trackCatNode(breathGain, end + 0.1);
+    }
+
+    if (shimmerDepth > 0.001) {
+      const shimmer = this.ctx.createOscillator();
+      const shimmerGain = this.ctx.createGain();
+      shimmer.type = 'sine';
+      shimmer.frequency.value = shimmerRate;
+      shimmerGain.gain.value = shimmerDepth;
+      shimmer.connect(shimmerGain);
+      shimmerGain.connect(env.gain);
+      shimmer.start(start);
+      shimmer.stop(Math.max(start + 0.02, releaseStart));
+      this._trackCatNode(shimmer, end + 0.1);
+      this._trackCatNode(shimmerGain, end + 0.1);
+    }
+
+    if (trillRate > 0 && trillDepth > 0) {
+      const trill = this.ctx.createOscillator();
+      const trillGain = this.ctx.createGain();
+      trill.type = 'sine';
+      trill.frequency.value = trillRate;
+      trillGain.gain.value = trillDepth;
+      trill.connect(trillGain);
+      trillGain.connect(osc.frequency);
+      trill.start(start);
+      trill.stop(end + 0.02);
+      this._trackCatNode(trill, end + 0.1);
+      this._trackCatNode(trillGain, end + 0.1);
+    }
+
+    osc.start(start);
+    osc.stop(end + 0.02);
+  }
+
+  _scheduleCatCanTransient({ startTime, duration, band, q, gain, offset = 0 }) {
+    const end = startTime + duration;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = this._getCatNoiseBuffer();
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = band;
+    filter.Q.value = q;
+    const env = this.ctx.createGain();
+    env.gain.setValueAtTime(0.001, startTime);
+    env.gain.linearRampToValueAtTime(gain, startTime + Math.min(0.003, duration * 0.2));
+    env.gain.exponentialRampToValueAtTime(0.001, end);
+    noise.connect(filter);
+    filter.connect(env);
+    env.connect(this.masterGain);
+    noise.start(startTime, offset);
+    noise.stop(end + 0.01);
+    this._trackCatNode(noise, end + 0.1);
+    this._trackCatNode(filter, end + 0.1);
+    this._trackCatNode(env, end + 0.1);
+  }
+
+  _scheduleCatCanThump(startTime) {
+    const end = startTime + 0.14;
+    const osc = this.ctx.createOscillator();
+    const env = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(2000 + Math.random() * 400, startTime);
+    osc.frequency.exponentialRampToValueAtTime(1800, end);
+    env.gain.setValueAtTime(0.001, startTime);
+    env.gain.linearRampToValueAtTime(0.55, startTime + 0.004);
+    env.gain.exponentialRampToValueAtTime(0.001, end);
+    osc.connect(env);
+    env.connect(this.masterGain);
+    osc.start(startTime);
+    osc.stop(end + 0.01);
+    this._trackCatNode(osc, end + 0.1);
+    this._trackCatNode(env, end + 0.1);
+  }
+
+  _scheduleCatCanMetalModes(startTime) {
+    const end = startTime + 0.28;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = this._getCatNoiseBuffer();
+    const env = this.ctx.createGain();
+    env.gain.setValueAtTime(0.001, startTime);
+    env.gain.linearRampToValueAtTime(1, startTime + 0.004);
+    env.gain.exponentialRampToValueAtTime(0.001, end);
+    env.connect(this.masterGain);
+    this._trackCatNode(env, end + 0.1);
+
+    const modes = [
+      { hz: 2100 + Math.random() * 220, q: 9, gain: 0.28 },
+      { hz: 3500 + Math.random() * 300, q: 10, gain: 0.18 },
+      { hz: 5100 + Math.random() * 350, q: 11, gain: 0.12 }
+    ];
+    modes.forEach((mode) => {
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = mode.hz;
+      filter.Q.value = mode.q;
+      const gain = this.ctx.createGain();
+      gain.gain.value = mode.gain;
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(env);
+      this._trackCatNode(filter, end + 0.1);
+      this._trackCatNode(gain, end + 0.1);
+    });
+
+    noise.start(startTime, Math.random() * 1.2);
+    noise.stop(end + 0.01);
+    this._trackCatNode(noise, end + 0.1);
+  }
+
+  _scheduleCatKibbleImpact(startTime) {
+    const impactEnd = startTime + 0.03 + Math.random() * 0.02;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = this._getCatNoiseBuffer();
+    const impactFilter = this.ctx.createBiquadFilter();
+    impactFilter.type = 'bandpass';
+    impactFilter.frequency.value = 3000 + Math.random() * 5000;
+    impactFilter.Q.value = 3 + Math.random() * 2;
+    const impactGain = this.ctx.createGain();
+    const impactLevel = 0.3 + Math.random() * 0.2;
+    impactGain.gain.setValueAtTime(0.001, startTime);
+    impactGain.gain.linearRampToValueAtTime(impactLevel, startTime + 0.002);
+    impactGain.gain.exponentialRampToValueAtTime(0.001, impactEnd);
+    noise.connect(impactFilter);
+    impactFilter.connect(impactGain);
+    impactGain.connect(this.masterGain);
+    this._trackCatNode(impactFilter, impactEnd + 0.1);
+    this._trackCatNode(impactGain, impactEnd + 0.1);
+
+    let sourceEnd = impactEnd + 0.01;
+    if (Math.random() > 0.35) {
+      const bowlEnd = startTime + 0.16;
+      const bowlFilter = this.ctx.createBiquadFilter();
+      bowlFilter.type = 'bandpass';
+      bowlFilter.frequency.value = 1800 + Math.random() * 800;
+      bowlFilter.Q.value = 6;
+      const bowlGain = this.ctx.createGain();
+      bowlGain.gain.setValueAtTime(0.001, startTime);
+      bowlGain.gain.linearRampToValueAtTime(0.1 + Math.random() * 0.05, startTime + 0.006);
+      bowlGain.gain.exponentialRampToValueAtTime(0.001, bowlEnd);
+      noise.connect(bowlFilter);
+      bowlFilter.connect(bowlGain);
+      bowlGain.connect(this.masterGain);
+      this._trackCatNode(bowlFilter, bowlEnd + 0.1);
+      this._trackCatNode(bowlGain, bowlEnd + 0.1);
+      sourceEnd = Math.max(sourceEnd, bowlEnd + 0.01);
+    }
+
+    noise.start(startTime, Math.random() * 1.5);
+    noise.stop(sourceEnd);
+    this._trackCatNode(noise, sourceEnd + 0.1);
   }
 
   _runUltrasonicSweep() {
@@ -979,58 +1285,120 @@ export class PaiPaiAcousticEngine {
   _runKittenContactCall() {
     this.currentModulationLabel = 'Kitten Contact Meow 850–1,650 Hz';
 
-    const triggerMeow = () => {
+    const triggerPhrase = () => {
       if (!this.isPlaying || this.activeProfileId !== 'kitten-contact-call') return;
+      this._pruneCatNodes();
       const now = this.ctx.currentTime;
+      const phraseStart = now + 0.03;
+      const callCount = 1 + Math.floor(Math.random() * 3);
+      let offset = 0;
+      let lastEnd = phraseStart;
+      let firstBase = 0;
 
-      const fund = this.ctx.createOscillator();
-      const harm2 = this.ctx.createOscillator();
-      const formant = this.ctx.createBiquadFilter();
-      const env = this.ctx.createGain();
+      for (let i = 0; i < callCount; i++) {
+        const baseHz = 850 + Math.random() * 450;
+        if (i === 0) firstBase = baseHz;
+        const duration = 0.72 + Math.random() * 0.18;
+        const f1a = 800 + Math.random() * 250;
+        const f1b = 900 + Math.random() * 300;
+        const f1c = 800 + Math.random() * 200;
+        const f2a = 1900 + Math.random() * 500;
+        const f2b = 1700 + Math.random() * 500;
+        const f2c = 1700 + Math.random() * 300;
+        const f3a = 2900 + Math.random() * 200;
+        const f3b = 3000 + Math.random() * 200;
+        const f3c = 2800 + Math.random() * 200;
 
-      fund.type = 'sawtooth';
-      harm2.type = 'triangle';
+        this._scheduleCatVocalization({
+          startTime: phraseStart + offset,
+          duration,
+          baseHz,
+          pitchPoints: [
+            { at: 0, ratio: 0.97 + Math.random() * 0.05 },
+            { at: 0.28, ratio: 1.3 + Math.random() * 0.3 },
+            { at: 0.62, ratio: 1.2 + Math.random() * 0.25 },
+            { at: 1, ratio: 0.85 + Math.random() * 0.1 }
+          ],
+          formantStart: [
+            { hz: f1a, q: 2.8 + Math.random() * 0.6, gain: 0.7 },
+            { hz: f2a, q: 3.2 + Math.random() * 0.8, gain: 0.45 },
+            { hz: f3a, q: 4 + Math.random() * 1, gain: 0.25 }
+          ],
+          formantMid: [
+            { hz: f1b, q: 2.8 + Math.random() * 0.6, gain: 0.7 },
+            { hz: f2b, q: 3.2 + Math.random() * 0.8, gain: 0.45 },
+            { hz: f3b, q: 4 + Math.random() * 1, gain: 0.25 }
+          ],
+          formantEnd: [
+            { hz: f1c, q: 2.8 + Math.random() * 0.6, gain: 0.7 },
+            { hz: f2c, q: 3.2 + Math.random() * 0.8, gain: 0.45 },
+            { hz: f3c, q: 4 + Math.random() * 1, gain: 0.25 }
+          ],
+          breathAmount: 0.12 + Math.random() * 0.06,
+          breathBand: 1400 + Math.random() * 600,
+          breathQ: 1.0 + Math.random() * 0.6,
+          lowCut: 800,
+          highCut: 3200,
+          harmonics: [1, 0.5, 0.15],
+          outputGain: 0.65 + Math.random() * 0.1,
+          shimmerRate: 4 + Math.random() * 3,
+          shimmerDepth: 0.02 + Math.random() * 0.02,
+          attack: 0.02 + Math.random() * 0.015,
+          release: 0.07 + Math.random() * 0.05
+        });
 
-      const basePitch = 920 + Math.random() * 180;
-      // Characteristic kitten pitch contour: rise swiftly to peak, gentle fall
-      fund.frequency.setValueAtTime(basePitch, now);
-      fund.frequency.exponentialRampToValueAtTime(basePitch * 1.55, now + 0.14);
-      fund.frequency.exponentialRampToValueAtTime(basePitch * 1.18, now + 0.45);
-      fund.frequency.exponentialRampToValueAtTime(basePitch * 0.88, now + 0.68);
+        lastEnd = phraseStart + offset + duration;
+        offset += duration + 0.35 + Math.random() * 0.25;
+      }
 
-      harm2.frequency.setValueAtTime(basePitch * 2, now);
-      harm2.frequency.exponentialRampToValueAtTime(basePitch * 3.1, now + 0.14);
-      harm2.frequency.exponentialRampToValueAtTime(basePitch * 1.76, now + 0.68);
-
-      // Mouth opening vowel formant ("Mee-ow")
-      formant.type = 'bandpass';
-      formant.frequency.setValueAtTime(1400, now);
-      formant.frequency.exponentialRampToValueAtTime(2400, now + 0.2);
-      formant.frequency.exponentialRampToValueAtTime(1100, now + 0.65);
-      formant.Q.value = 2.4;
-
-      env.gain.setValueAtTime(0.001, now);
-      env.gain.linearRampToValueAtTime(0.65, now + 0.06);
-      env.gain.setValueAtTime(0.6, now + 0.42);
-      env.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-
-      fund.connect(formant);
-      harm2.connect(formant);
-      formant.connect(env);
-      env.connect(this.masterGain);
-
-      fund.start(now);
-      harm2.start(now);
-      fund.stop(now + 0.72);
-      harm2.stop(now + 0.72);
-      this.activeNodes.push(fund, harm2, formant, env);
-
-      this.currentInstantHz = Math.round(basePitch * 1.35);
+      this.currentInstantHz = Math.round(Math.min(1650, firstBase * 1.2));
       if (this.onStateChange) this.onStateChange(this.getStatus());
-
-      this.loopTimer = setTimeout(triggerMeow, 1350);
+      const pause = 2.5 + Math.random() * 1.5;
+      this.loopTimer = setTimeout(triggerPhrase, Math.max(200, (lastEnd - now + pause) * 1000));
     };
-    triggerMeow();
+
+    triggerPhrase();
+  }
+
+  _runCatFoodCanKibble() {
+    this.currentModulationLabel = 'Can Pull-Tab Pop + Kibble Cascade';
+
+    const triggerPhrase = () => {
+      if (!this.isPlaying || this.activeProfileId !== 'food-can-kibble') return;
+      this._pruneCatNodes();
+      const now = this.ctx.currentTime;
+      const phraseStart = now + 0.03;
+      const phraseDuration = 1.0 + Math.random() * 0.6;
+
+      this._scheduleCatCanTransient({
+        startTime: phraseStart,
+        duration: 0.05,
+        band: 4200 + Math.random() * 1200,
+        q: 3,
+        gain: 0.5,
+        offset: Math.random() * 1.2
+      });
+
+      const lidStart = phraseStart + 0.12 + Math.random() * 0.06;
+      this._scheduleCatCanThump(lidStart);
+      this._scheduleCatCanMetalModes(lidStart);
+
+      const impactCount = 6 + Math.floor(Math.random() * 7);
+      for (let i = 0; i < impactCount; i++) {
+        const impactTime = phraseStart + 0.28 + Math.random() * (phraseDuration - 0.35);
+        this._scheduleCatKibbleImpact(impactTime);
+      }
+
+      this.currentInstantHz = 4800;
+      if (this.onStateChange) this.onStateChange(this.getStatus());
+      const pause = 2.5 + Math.random() * 1.5;
+      this.loopTimer = setTimeout(
+        triggerPhrase,
+        Math.max(200, (phraseStart + phraseDuration - now + pause) * 1000)
+      );
+    };
+
+    triggerPhrase();
   }
 
   _runFoodCanKibble(targetProfileId = 'food-can-kibble', label = 'Can Pull-Tab Pop + Kibble Cascade') {
@@ -1091,84 +1459,149 @@ export class PaiPaiAcousticEngine {
   _runPreySqueak() {
     this.currentModulationLabel = 'Rodent Squeak 4.5–8.8 kHz Chirp';
 
-    const triggerSqueak = () => {
+    const triggerPhrase = () => {
       if (!this.isPlaying || this.activeProfileId !== 'prey-squeak') return;
+      this._pruneCatNodes();
       const now = this.ctx.currentTime;
+      const phraseStart = now + 0.03;
+      const callCount = 2 + Math.floor(Math.random() * 3);
+      let offset = 0;
+      let lastEnd = phraseStart;
+      let firstBase = 0;
 
-      const chirpCount = 2 + Math.floor(Math.random() * 2);
-      for (let i = 0; i < chirpCount; i++) {
-        const offset = i * 0.14;
-        const osc = this.ctx.createOscillator();
-        const env = this.ctx.createGain();
+      for (let i = 0; i < callCount; i++) {
+        const baseHz = 4800 + Math.random() * 1200;
+        if (i === 0) firstBase = baseHz;
+        const duration = 0.05 + Math.random() * 0.07;
+        const f1 = 4700 + Math.random() * 300;
+        const f2 = 6200 + Math.random() * 400;
+        const f3 = 8000 + Math.random() * 300;
 
-        osc.type = 'sine';
-        const startHz = 5200 + Math.random() * 1400;
-        const peakHz = startHz + 2200;
-        osc.frequency.setValueAtTime(startHz, now + offset);
-        osc.frequency.exponentialRampToValueAtTime(peakHz, now + offset + 0.045);
-        osc.frequency.exponentialRampToValueAtTime(startHz * 0.9, now + offset + 0.09);
+        this._scheduleCatVocalization({
+          startTime: phraseStart + offset,
+          duration,
+          baseHz,
+          pitchPoints: [
+            { at: 0, ratio: 1 },
+            { at: 0.4, ratio: 1.25 + Math.random() * 0.15 },
+            { at: 1, ratio: 0.94 + Math.random() * 0.04 }
+          ],
+          formantStart: [
+            { hz: f1, q: 4, gain: 0.65 },
+            { hz: f2, q: 4, gain: 0.4 },
+            { hz: f3, q: 4.5, gain: 0.25 }
+          ],
+          formantMid: [
+            { hz: f1 * 1.02, q: 4, gain: 0.65 },
+            { hz: f2 * 1.02, q: 4, gain: 0.4 },
+            { hz: f3, q: 4.5, gain: 0.25 }
+          ],
+          formantEnd: [
+            { hz: f1 * 0.98, q: 4, gain: 0.65 },
+            { hz: f2 * 0.98, q: 4, gain: 0.4 },
+            { hz: f3, q: 4.5, gain: 0.25 }
+          ],
+          breathAmount: 0.1 + Math.random() * 0.04,
+          breathBand: 6500 + Math.random() * 1500,
+          breathQ: 1.5,
+          lowCut: 4500,
+          highCut: 8800,
+          outputGain: 0.3 + Math.random() * 0.04,
+          shimmerRate: 8 + Math.random() * 6,
+          shimmerDepth: 0.005 + Math.random() * 0.01,
+          attack: 0.015 + Math.random() * 0.005,
+          release: 0.03 + Math.random() * 0.02,
+          harmonics: [1, 0.15]
+        });
 
-        env.gain.setValueAtTime(0.001, now + offset);
-        env.gain.linearRampToValueAtTime(0.55, now + offset + 0.015);
-        env.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.095);
-
-        osc.connect(env);
-        env.connect(this.masterGain);
-        osc.start(now + offset);
-        osc.stop(now + offset + 0.1);
-        this.activeNodes.push(osc, env);
-        this.currentInstantHz = Math.round(peakHz);
+        lastEnd = phraseStart + offset + duration;
+        offset += duration + 0.08 + Math.random() * 0.07;
       }
 
+      this.currentInstantHz = Math.round(Math.min(8800, firstBase * 1.25));
       if (this.onStateChange) this.onStateChange(this.getStatus());
-      this.loopTimer = setTimeout(triggerSqueak, 900 + Math.random() * 450);
+      const pause = 1.8 + Math.random() * 1.2;
+      this.loopTimer = setTimeout(triggerPhrase, Math.max(200, (lastEnd - now + pause) * 1000));
     };
-    triggerSqueak();
+
+    triggerPhrase();
   }
 
   _runFriendlyTrill() {
     this.currentModulationLabel = 'Maternal Feline Trill 420–1,400 Hz';
 
-    const triggerTrill = () => {
+    const triggerPhrase = () => {
       if (!this.isPlaying || this.activeProfileId !== 'friendly-trill') return;
+      this._pruneCatNodes();
       const now = this.ctx.currentTime;
+      const phraseStart = now + 0.03;
+      const callCount = 1 + Math.floor(Math.random() * 2);
+      let offset = 0;
+      let lastEnd = phraseStart;
+      let firstBase = 0;
 
-      const carrier = this.ctx.createOscillator();
-      const vibrato = this.ctx.createOscillator();
-      const vibGain = this.ctx.createGain();
-      const env = this.ctx.createGain();
+      for (let i = 0; i < callCount; i++) {
+        const baseHz = 420 + Math.random() * 580;
+        if (i === 0) firstBase = baseHz;
+        const duration = 0.45 + Math.random() * 0.3;
+        const f1a = 500 + Math.random() * 300;
+        const f1b = 600 + Math.random() * 300;
+        const f1c = 500 + Math.random() * 300;
+        const f2a = 1200 + Math.random() * 500;
+        const f2b = 1300 + Math.random() * 600;
+        const f2c = 1200 + Math.random() * 500;
+        const f3 = 2200 + Math.random() * 200;
 
-      carrier.type = 'triangle';
-      carrier.frequency.setValueAtTime(520, now);
-      carrier.frequency.exponentialRampToValueAtTime(1180, now + 0.38);
-      carrier.frequency.exponentialRampToValueAtTime(920, now + 0.52);
+        this._scheduleCatVocalization({
+          startTime: phraseStart + offset,
+          duration,
+          baseHz,
+          pitchPoints: [
+            { at: 0, ratio: 0.95 + Math.random() * 0.05 },
+            { at: 0.35, ratio: 1.1 + Math.random() * 0.08 },
+            { at: 1, ratio: 0.95 + Math.random() * 0.05 }
+          ],
+          formantStart: [
+            { hz: f1a, q: 3, gain: 0.7 },
+            { hz: f2a, q: 3.5, gain: 0.4 },
+            { hz: f3, q: 4, gain: 0.2 }
+          ],
+          formantMid: [
+            { hz: f1b, q: 3, gain: 0.7 },
+            { hz: f2b, q: 3.5, gain: 0.4 },
+            { hz: f3, q: 4, gain: 0.2 }
+          ],
+          formantEnd: [
+            { hz: f1c, q: 3, gain: 0.7 },
+            { hz: f2c, q: 3.5, gain: 0.4 },
+            { hz: f3, q: 4, gain: 0.2 }
+          ],
+          breathAmount: 0.1 + Math.random() * 0.04,
+          breathBand: 900 + Math.random() * 400,
+          breathQ: 1.2,
+          lowCut: 420,
+          highCut: 2400,
+          harmonics: [1, 0.5, 0.2],
+          outputGain: 0.48 + Math.random() * 0.06,
+          shimmerRate: 3 + Math.random() * 2,
+          shimmerDepth: 0.015 + Math.random() * 0.01,
+          trillRate: 24 + Math.random() * 8,
+          trillDepth: 35 + Math.random() * 30,
+          attack: 0.03 + Math.random() * 0.01,
+          release: 0.08 + Math.random() * 0.04
+        });
 
-      // Purr-trill 28 Hz modulation
-      vibrato.type = 'sine';
-      vibrato.frequency.value = 28;
-      vibGain.gain.value = 85;
+        lastEnd = phraseStart + offset + duration;
+        offset += duration + 0.3 + Math.random() * 0.2;
+      }
 
-      env.gain.setValueAtTime(0.001, now);
-      env.gain.linearRampToValueAtTime(0.65, now + 0.05);
-      env.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-
-      vibrato.connect(vibGain);
-      vibGain.connect(carrier.frequency);
-      carrier.connect(env);
-      env.connect(this.masterGain);
-
-      carrier.start(now);
-      vibrato.start(now);
-      carrier.stop(now + 0.58);
-      vibrato.stop(now + 0.58);
-      this.activeNodes.push(carrier, vibrato, vibGain, env);
-
-      this.currentInstantHz = 960;
+      this.currentInstantHz = Math.round(Math.min(1400, firstBase * 1.1));
       if (this.onStateChange) this.onStateChange(this.getStatus());
-
-      this.loopTimer = setTimeout(triggerTrill, 1200);
+      const pause = 2.5 + Math.random() * 1.5;
+      this.loopTimer = setTimeout(triggerPhrase, Math.max(200, (lastEnd - now + pause) * 1000));
     };
-    triggerTrill();
+
+    triggerPhrase();
   }
 
   // =========================================================================
